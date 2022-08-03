@@ -61,13 +61,7 @@ Requirements
 Installation
 ~~~~~~~~~~~~
 
-通过 pip 命令直接安装：
-
-.. code:: shell
-
-   pip install easytokenizer
-
-或者从 github 仓库中获取最新版本安装：
+从 github 仓库中获取最新版本安装：
 
 .. code:: shell
 
