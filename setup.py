@@ -148,7 +148,7 @@ setup(
     author='wangzejun',
     author_email='wangzejunscut@126.com',
     description='easytokenizer Python bindings',
-    #long_description=_get_readme(),
+    long_description=_get_readme(),
     ext_modules=ext_modules,
     url='https://github.com/zejunwang1/easytokenizer',
     license='MIT',
