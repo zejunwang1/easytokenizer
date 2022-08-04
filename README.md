@@ -133,7 +133,7 @@ python test_speed.py --vocab_path ../vocab.txt --data_path sents.txt --num_threa
 | BertTokenizerFast | 4.016 | 1.860 | 1.405 | 1.352 | 1.181 | 1.139 |
 | paddlenlp-FasterTokenizer | 2.861 | 2.342 | 2.258 | 2.216 | 2.344 | 2.194 |
 | easytokenizer (num_threads=1) | 2.701 | 1.890 | 1.754 | 1.563 | 1.871 | 2.089 |
-| easytokenizer (num_threads=4) | 3.405 | 0.803 | 0.790 | 0.768 | 0.861 | 0.824 |
+| easytokenizer (num_threads=4) | 3.405 | 0.803 | 0.790 | 0.768 | 0.751 | 0.802 |
 
 可以看出，当 batch_size=1 时，单线程 (num_threads=1) 下的 easytokenizer 处理速度最快；当 batch_size>=8 时，四线程 (num_threads=4) 下的 easytokenizer 处理速度最快。
 
