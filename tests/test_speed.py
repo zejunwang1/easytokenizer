@@ -78,7 +78,7 @@ def main(args):
     t_e = time.time()
     paddle_time_usage = t_e - t_s
     
-    
+    '''
     # Correctness verification
     count = 0
     for i in range(len(hug_input_ids)):
@@ -88,7 +88,7 @@ def main(args):
     
     print("")
     print(count)
-    
+    '''
 
     print("huggingface tokenizer time usage: {}s".format(hug_time_usage))
     print("huggingface fast tokenizer time usage: {}s".format(hug_fast_time_usage))
