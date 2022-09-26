@@ -18,15 +18,15 @@ def main(args):
                 sent_list.append(line)
 
     # huggingface tokenizer
-    hug_tokenizer = BertTokenizer(args.vocab_path, do_lower_case=True)
-    hug_fast_tokenizer = BertTokenizerFast(args.vocab_path, do_lower_case=True)
+    hug_tokenizer = BertTokenizer(args.vocab_path, do_lower_case=args.do_lower_case)
+    hug_fast_tokenizer = BertTokenizerFast(args.vocab_path, do_lower_case=args.do_lower_case)
     
     # easytokenizer
-    our_tokenizer = OurTokenizer(args.vocab_path, do_lower_case=True)
+    our_tokenizer = OurTokenizer(args.vocab_path, do_lower_case=args.do_lower_case)
 
     # paddlenlp faster tokenizer
     paddlenlp_tokenizer = AutoTokenizer.from_pretrained(
-        "bert-base-chinese", use_faster=True, do_lower_case=True)
+        "bert-base-chinese", use_faster=True, do_lower_case=args.do_lower_case)
     
     num_batches = int((len(sent_list) - 1) / args.batch_size) + 1
     
@@ -78,7 +78,7 @@ def main(args):
     t_e = time.time()
     paddle_time_usage = t_e - t_s
     
-    '''
+    
     # Correctness verification
     count = 0
     for i in range(len(hug_input_ids)):
@@ -88,7 +88,7 @@ def main(args):
     
     print("")
     print(count)
-    '''
+    
 
     print("huggingface tokenizer time usage: {}s".format(hug_time_usage))
     print("huggingface fast tokenizer time usage: {}s".format(hug_fast_time_usage))
@@ -101,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", required=True, type=str)
     parser.add_argument("--num_threads", type=int, default=4)
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--do_lower_case", action="store_true")
     args = parser.parse_args()
 
     main(args)

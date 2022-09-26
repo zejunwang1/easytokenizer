@@ -55,6 +55,7 @@ std::vector<std::string> BasicTokenizer::split_by_special_tokens(const std::stri
   size_t start = 0;
   std::string subtext;
   std::vector<std::string> res;
+  res.reserve(2 * matches.size() + 1);
   for (size_t i = 0; i < matches.size(); i++) {
     subtext = text.substr(start, matches[i].first - start);
     if (!subtext.empty()) res.emplace_back(subtext);
@@ -72,6 +73,7 @@ std::vector<std::string> BasicTokenizer::basic_tokenize(const std::string& text)
   std::vector<std::string> res;
   std::vector<Token> tokens;
   basic_tokenize(text, tokens);
+  res.reserve(tokens.size());
   for (size_t i = 0; i < tokens.size(); i++) {
     res.emplace_back(tokens[i].second);
   }
@@ -84,6 +86,7 @@ void BasicTokenizer::basic_tokenize(const std::string& text, std::vector<Token>&
   
   size_t pos = 0;
   std::string subtext;
+  tokens.reserve(text.size());
   for (size_t i = 0; i < splits.size(); i++) {
     subtext = splits[i];
     if (_special->count(subtext)) {
@@ -324,6 +327,7 @@ bool Tokenizer::startswith(const std::string& text, const std::string& str,
 
 std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int64_t>& input_ids) {
   std::vector<std::string> tokens;
+  tokens.reserve(input_ids.size());
   for (size_t i = 0; i < input_ids.size(); i++) {
     tokens.emplace_back(get_token(input_ids[i]));
   }
@@ -333,6 +337,7 @@ std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int6
 std::vector<int64_t> Tokenizer::convert_tokens_to_ids(const std::vector<std::string>& tokens, 
     bool add_cls_sep) {
   std::vector<int64_t> input_ids;
+  input_ids.reserve(tokens.size() + 2);
   if (add_cls_sep)  input_ids.emplace_back(cls_id());
   for (size_t i = 0; i < tokens.size(); i++) {
     input_ids.emplace_back(get_id(tokens[i]));
@@ -353,6 +358,8 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
     std::vector<Offset>& offsets) {
   if (tokens.size())  tokens.clear();
   if (offsets.size()) offsets.clear();
+  tokens.reserve(text.size());
+  offsets.reserve(text.size());
   
   std::vector<Token> base_tokens;
   basic_tokenize(text, base_tokens);
@@ -486,6 +493,8 @@ void Tokenizer::encode(const std::vector<std::string>& texts,
   }
 
   // token_type_ids and attention_mask
+  token_type_ids.reserve(n);
+  attention_mask.reserve(n);
   for (size_t i = 0; i < n; i++) {
     std::vector<int64_t> token_type_ids_tmp(input_ids[i].size(), 0);
     std::vector<int64_t> attention_mask_tmp(input_ids[i].size(), 1);
