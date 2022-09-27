@@ -365,14 +365,15 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
   basic_tokenize(text, base_tokens);
   
   bool is_bad = false;
-  size_t pos = 0, cur = 0;
+  size_t pos = 0, cur = 0, len = 0;
   std::string token, prefix, subtoken;
   std::vector<std::string> sub_tokens;
   std::vector<Offset> sub_offsets;
   for (size_t i = 0; i < base_tokens.size(); i++) {
     pos = base_tokens[i].first;
     token = base_tokens[i].second;
-    if (_special->count(token) || token.size() > _max_input_chars_per_word) {
+    if (_special->count(token) || _vocab->count(token) ||
+        token.size() > _max_input_chars_per_word) {
       tokens.emplace_back(token);
       offsets.emplace_back(pos, token.size());
       continue;
@@ -387,34 +388,24 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
       subtoken = token.substr(cur);
       if (cur > 0)  subtoken = "##" + subtoken;
       prefix = _vocab->max_prefix(subtoken, _max_prefix_matches);
-      if (cur > 0) {
-        if (prefix.size() < 3) {
-          is_bad = true;
-          break;
-        }
-      } else {
-        if (prefix.empty()) {
-          is_bad = true;
-          break;
-        }
+      if ((cur > 0 && prefix.size() < 3) || prefix.empty()) {
+        is_bad = true;
+        break;
       }
+
       sub_tokens.emplace_back(prefix);
-      if (cur > 0) {
-        sub_offsets.emplace_back(pos + cur, prefix.size() - 2);
-        cur += (prefix.size() - 2);
-      } else {
-        sub_offsets.emplace_back(pos, prefix.size());
-        cur += prefix.size();
-      }
+      len = cur > 0 ? (prefix.size() - 2) : prefix.size();
+      sub_offsets.emplace_back(pos + cur, len);
+      cur += len;
     }
     if (is_bad) {
       tokens.emplace_back(token);
       offsets.emplace_back(pos, token.size());
-    } else {
-      for (size_t j = 0; j < sub_tokens.size(); j++) {
-        tokens.emplace_back(sub_tokens[j]);
-        offsets.emplace_back(sub_offsets[j].first, sub_offsets[j].second);
-      }
+      continue;
+    }
+    for (size_t j = 0; j < sub_tokens.size(); j++) {
+      tokens.emplace_back(sub_tokens[j]);
+      offsets.emplace_back(sub_offsets[j].first, sub_offsets[j].second);
     }
   }
 }
