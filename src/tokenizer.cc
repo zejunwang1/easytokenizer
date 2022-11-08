@@ -50,25 +50,6 @@ void BasicTokenizer::add_special_tokens(const std::vector<std::string>& tokens) 
   }
 }
 
-std::vector<std::string> BasicTokenizer::split_by_special_tokens(const std::string& text) const {
-  auto matches = _special->parse(text, _max_prefix_matches);
-  size_t start = 0;
-  std::string subtext;
-  std::vector<std::string> res;
-  res.reserve(2 * matches.size() + 1);
-  for (size_t i = 0; i < matches.size(); i++) {
-    subtext = text.substr(start, matches[i].first - start);
-    if (!subtext.empty()) res.emplace_back(subtext);
-    res.emplace_back(matches[i].second);
-    start = matches[i].first + matches[i].second.size();
-  }
-  if (start < text.size()) {
-    subtext = text.substr(start);
-    res.emplace_back(subtext);
-  }
-  return res;
-}
-
 std::vector<std::string> BasicTokenizer::basic_tokenize(const std::string& text) {
   std::vector<std::string> res;
   std::vector<Token> tokens;
@@ -82,32 +63,39 @@ std::vector<std::string> BasicTokenizer::basic_tokenize(const std::string& text)
 
 void BasicTokenizer::basic_tokenize(const std::string& text, std::vector<Token>& tokens) {
   if (tokens.size())  tokens.clear();
-  auto splits = split_by_special_tokens(text);
-  
-  size_t pos = 0;
-  std::string subtext;
   tokens.reserve(text.size());
-  for (size_t i = 0; i < splits.size(); i++) {
-    subtext = splits[i];
-    if (_special->count(subtext)) {
-      tokens.emplace_back(pos, subtext);
-    } else {
-      tokenize(subtext, pos, tokens);
+  auto matches = _special->parse(text, _max_prefix_matches);
+  if (matches.empty()) {
+    tokenize(text, 0, tokens);
+    return;
+  }
+  size_t start = 0;
+  std::string subtext;
+  for (size_t i = 0; i < matches.size(); i++) {
+    subtext = text.substr(start, matches[i].first - start);
+    if (subtext.size()) {
+      tokenize(subtext, start, tokens);
+      start += subtext.size();
     }
-    pos += subtext.size();
+    tokens.emplace_back(start, matches[i].second);
+    start += matches[i].second.size();
+  }
+  if (start < text.size()) {
+    subtext = text.substr(start);
+    tokenize(subtext, start, tokens);
   }
 }
 
 void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<Token>& tokens) {
   const char* buf = text.c_str();
-  size_t len = std::strlen(buf);
+  size_t len = text.size();
   char* word = new char[len + 1];
   int32_t* code = new int32_t[2];
   uint8_t* ch = new uint8_t[10];
-
+  
   int32_t unicode = 0;
   bool last_state = false;
-  size_t i = 0, m = 0, n = 0, start = 0, last_index = 0;
+  size_t i = 0, j = 0, m = 0, n = 0, start = 0, last_index = 0;
   while (i < len) {
     if (isascii(buf[i])) {
       if (std::isalnum(buf[i])) {
@@ -119,38 +107,38 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
         word[n++] = buf[i++];
         word[n] = '\0';
         start = i - n;
-        n = 0;
         if (!(isCntrl(word[0]) || word[0] == 0)) {
           last_state = false;
           if (!std::isspace(word[0])) {
-            tokens.emplace_back(pos + start, word);
+            tokens.emplace_back(pos + start, std::string(word, n));
           }
         }
+        n = 0;
       }
       
       if (n > 0) {
         word[n] = '\0';
         start = i - n;
-        n = 0;
         if (!last_state) {
-          tokens.emplace_back(pos + start, word);
+          tokens.emplace_back(pos + start, std::string(word, n));
         } else {
           last_index = tokens.size() - 1;
-          tokens[last_index].second.append(word);
+          tokens[last_index].second.append(word, n);
         }
+        n = 0;
         last_state = true;
       }
     } else {
       if (n > 0) {
         word[n] = '\0';
         start = i - n;
-        n = 0;
         if (!last_state) {
-          tokens.emplace_back(pos + start, word);
+          tokens.emplace_back(pos + start, std::string(word, n));
         } else {
           last_index = tokens.size() - 1;
-          tokens[last_index].second.append(word);
+          tokens[last_index].second.append(word, n);
         }
+        n = 0;
         last_state = true;
       }
       
@@ -173,7 +161,7 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
           (unicode >= 0xF900 && unicode <= 0xFAFF) ||
           (unicode >= 0x2F800 && unicode <= 0x2FA1F) ||
           (utf8proc_category_string(unicode)[0] == 'P')) {
-        tokens.emplace_back(pos + i - n, word);
+        tokens.emplace_back(pos + i - n, std::string(word, n));
         last_state = false;
       } else if (strcmp(utf8proc_category_string(unicode), "Zs") == 0) {
         last_state = false;
@@ -191,10 +179,10 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
           }
         } else {
           if (!last_state) {
-            tokens.emplace_back(pos + i - n, word);
+            tokens.emplace_back(pos + i - n, std::string(word, n));
           } else {
             last_index = tokens.size() - 1;
-            tokens[last_index].second.append(word);
+            tokens[last_index].second.append(word, n);
           }
         }
         last_state = true;
@@ -209,7 +197,7 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
       tokens.emplace_back(pos + start, word);
     } else {
       last_index = tokens.size() - 1;
-      tokens[last_index].second.append(word);
+      tokens[last_index].second.append(word, n);
     }
   }
   delete []ch;
@@ -229,6 +217,7 @@ std::string BasicTokenizer::normalize(const uint8_t* str) {
   int32_t* code = new int32_t[2];
   size_t i = 0, n = 0;
   std::string res;
+  res.reserve(len);
   while (i < len) {
     if (isascii(norm[i])) {
       res.push_back(norm[i]);
@@ -242,7 +231,7 @@ std::string BasicTokenizer::normalize(const uint8_t* str) {
 
       utf8proc_iterate((uint8_t*)word, n, code);
       if (strcmp(utf8proc_category_string(code[0]), "Mn") != 0) {
-        res.append(word);
+        res.append(word, n);
       }
       n = 0;
     }
@@ -316,13 +305,6 @@ std::string Tokenizer::get_token(int64_t id) {
 
 bool Tokenizer::count(const std::string& token) const {
   return _vocab->count(token);
-}
-
-bool Tokenizer::startswith(const std::string& text, const std::string& str,
-    size_t beg, int len) {
-  std::string subtext = text.substr(beg, len);
-  if (subtext.find(str) == 0) return true;
-  return false;
 }
 
 std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int64_t>& input_ids) {

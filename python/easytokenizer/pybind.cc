@@ -72,8 +72,6 @@ PYBIND11_MODULE(easytokenizer, m) {
     .def("get_id", &tokenizer::Tokenizer::get_id, py::arg("token"))
     .def("get_token", &tokenizer::Tokenizer::get_token, py::arg("id"))
     .def("count", &tokenizer::Tokenizer::count, py::arg("token"))
-    .def("startswith", &tokenizer::Tokenizer::startswith, 
-         py::arg("text"), py::arg("flag"), py::arg("begin") = 0, py::arg("length") = -1)
     .def("convert_ids_to_tokens", &tokenizer::Tokenizer::convert_ids_to_tokens, py::arg("input_ids")) 
     .def("convert_tokens_to_ids", &tokenizer::Tokenizer::convert_tokens_to_ids, 
          py::arg("tokens"), py::arg("add_cls_sep") = true)

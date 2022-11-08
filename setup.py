@@ -117,6 +117,7 @@ class BuildExt(build_ext):
         opts = self.c_opts.get(ct, [])
         extra_link_args = []
         
+        opts.append("-O3")
         opts.append("-pthread")
 
         if ct == 'unix':

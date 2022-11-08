@@ -50,10 +50,9 @@ class BasicTokenizer {
     const std::string _mask_token = "[MASK]";
     
     bool _do_lower_case;
-    const size_t _max_prefix_matches = 512;
+    const size_t _max_prefix_matches = 64;
 
     std::unique_ptr<trie> _special;
-    std::vector<std::string> split_by_special_tokens(const std::string& text) const;
     std::string normalize(const uint8_t* str);
     int isCntrl(int c);
 };
@@ -76,8 +75,6 @@ class Tokenizer : public BasicTokenizer {
     std::string get_token(int64_t id);
 
     bool count(const std::string& token) const;    
-    bool startswith(const std::string& text, const std::string& str,
-        size_t beg = 0, int len = -1);
     
     std::vector<std::string> convert_ids_to_tokens(const std::vector<int64_t>& input_ids);    
     std::vector<int64_t> convert_tokens_to_ids(const std::vector<std::string>& tokens,
