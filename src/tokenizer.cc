@@ -90,7 +90,6 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
   const char* buf = text.c_str();
   size_t len = text.size();
   char* word = new char[len + 1];
-  int32_t* code = new int32_t[2];
   uint8_t* ch = new uint8_t[10];
   
   int32_t unicode = 0;
@@ -149,8 +148,7 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
       word[n] = '\0';
       
       // unicode value
-      utf8proc_iterate((uint8_t*)word, n, code);
-      unicode = code[0];
+      utf8proc_iterate((uint8_t*)word, n, &unicode);
       // is chinese character
       if ((unicode >= 0x4E00 && unicode <= 0x9FFF) ||
           (unicode >= 0x3400 && unicode <= 0x4DBF) ||
@@ -201,7 +199,6 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
     }
   }
   delete []ch;
-  delete []code;
   delete []word;
 }
 
@@ -214,7 +211,7 @@ std::string BasicTokenizer::normalize(const uint8_t* str) {
   auto norm = utf8proc_NFD(str);
   size_t len = std::strlen((char*)norm);
   char* word = new char[len + 1];
-  int32_t* code = new int32_t[2];
+  int32_t unicode = 0;
   size_t i = 0, n = 0;
   std::string res;
   res.reserve(len);
@@ -229,14 +226,14 @@ std::string BasicTokenizer::normalize(const uint8_t* str) {
       }
       word[n] = '\0';
 
-      utf8proc_iterate((uint8_t*)word, n, code);
-      if (strcmp(utf8proc_category_string(code[0]), "Mn") != 0) {
+      utf8proc_iterate((uint8_t*)word, n, &unicode);
+      if (strcmp(utf8proc_category_string(unicode), "Mn") != 0) {
         res.append(word, n);
       }
       n = 0;
     }
   }
-  delete []code;
+  free(norm);
   delete []word;
   return res;
 }
