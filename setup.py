@@ -60,7 +60,7 @@ ext_modules = [
             EASYTOKENIZER_SRC,
         ],
         language="c++",
-        extra_compile_args=[],
+        extra_compile_args=["-O3"],
     ),
 ]
 
@@ -117,9 +117,6 @@ class BuildExt(build_ext):
         opts = self.c_opts.get(ct, [])
         extra_link_args = []
         
-        opts.append("-O3")
-        opts.append("-pthread")
-
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
@@ -131,7 +128,7 @@ class BuildExt(build_ext):
             )
 
         for ext in self.extensions:
-            ext.extra_compile_args = opts
+            ext.extra_compile_args.extend(opts)
             ext.extra_link_args = extra_link_args
         build_ext.build_extensions(self)
 

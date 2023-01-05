@@ -99,8 +99,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--vocab_path", required=True, type=str)
     parser.add_argument("--data_path", required=True, type=str)
-    parser.add_argument("--num_threads", type=int, default=4)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--num_threads", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--do_lower_case", action="store_true")
     args = parser.parse_args()
 

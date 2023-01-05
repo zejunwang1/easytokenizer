@@ -66,18 +66,21 @@ class Tokenizer : public BasicTokenizer {
     void insert(const std::vector<std::string>& tokens);
     
     size_t size() const;
-    int64_t pad_id() const;
-    int64_t cls_id() const;
-    int64_t sep_id() const;
-    int64_t unk_id() const;
-    int64_t mask_id() const;
-    int64_t get_id(const std::string& token);
-    std::string get_token(int64_t id);
+    int32_t pad_id() const;
+    int32_t cls_id() const;
+    int32_t sep_id() const;
+    int32_t unk_id() const;
+    int32_t mask_id() const;
+    int32_t get_id(const std::string& token);
+    std::string get_token(int32_t id);
 
     bool count(const std::string& token) const;    
     
-    std::vector<std::string> convert_ids_to_tokens(const std::vector<int64_t>& input_ids);    
-    std::vector<int64_t> convert_tokens_to_ids(const std::vector<std::string>& tokens,
+    std::vector<std::string> convert_ids_to_tokens(const std::vector<int32_t>& input_ids);    
+    std::vector<int32_t> convert_tokens_to_ids(const std::vector<std::string>& tokens,
+        bool add_cls_sep = true);
+    void convert_tokens_to_ids(const std::vector<std::string>& tokens,
+        std::vector<int32_t>& input_ids,
         bool add_cls_sep = true);
     
     std::vector<std::string> wordpiece_tokenize(const std::string& text);
@@ -86,12 +89,12 @@ class Tokenizer : public BasicTokenizer {
         std::vector<Offset>& offsets);
     
     // single text
-    std::vector<int64_t> encode(const std::string& text, 
+    std::vector<int32_t> encode(const std::string& text, 
         bool add_cls_sep = true, 
         bool truncation = true, 
         size_t max_length = 512);
     void encode(const std::string& text,
-        std::vector<int64_t>& input_ids, 
+        std::vector<int32_t>& input_ids, 
         std::vector<Offset>& offsets,
         bool add_cls_sep = true, 
         bool truncation = true, 
@@ -99,9 +102,9 @@ class Tokenizer : public BasicTokenizer {
     
     // batch texts
     void encode(const std::vector<std::string>& texts,
-        std::vector<std::vector<int64_t>>& input_ids,
-        std::vector<std::vector<int64_t>>& token_type_ids,
-        std::vector<std::vector<int64_t>>& attention_mask,
+        std::vector<std::vector<int32_t>>& input_ids,
+        std::vector<std::vector<int32_t>>& token_type_ids,
+        std::vector<std::vector<int32_t>>& attention_mask,
         std::vector<std::vector<Offset>>& offsets,
         int num_threads = 1,
         bool add_cls_sep = true, 
@@ -113,6 +116,7 @@ class Tokenizer : public BasicTokenizer {
   protected:
     std::unique_ptr<trie> _vocab;
     const size_t _max_input_chars_per_word = 100;
+    int32_t _pad_id, _cls_id, _sep_id, _unk_id, _mask_id;
     void load_vocab(const std::string& vocab_path);
 };
 

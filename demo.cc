@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   bool truncation = true;
   size_t max_length = 512;
 
-  std::vector<int64_t> input_ids;
+  std::vector<int32_t> input_ids;
   // input_ids = AutoTokenizer.encode(text, add_cls_sep, truncation, max_length);
   AutoTokenizer.encode(text, input_ids, offsets, add_cls_sep, truncation, max_length);
 
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]) {
   bool padding = true;
   bool padding_to_max_length = false;
 
-  std::vector<std::vector<int64_t>> batch_input_ids;
-  std::vector<std::vector<int64_t>> batch_token_type_ids;
-  std::vector<std::vector<int64_t>> batch_attention_mask;
+  std::vector<std::vector<int32_t>> batch_input_ids;
+  std::vector<std::vector<int32_t>> batch_token_type_ids;
+  std::vector<std::vector<int32_t>> batch_attention_mask;
   std::vector<std::vector<Offset>> batch_offsets;
   AutoTokenizer.encode(texts, batch_input_ids, batch_token_type_ids, batch_attention_mask,
       batch_offsets, num_threads, add_cls_sep, padding, padding_to_max_length, truncation, max_length);

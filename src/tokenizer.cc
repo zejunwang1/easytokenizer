@@ -94,7 +94,7 @@ void BasicTokenizer::tokenize(const std::string& text, size_t pos, std::vector<T
   
   int32_t unicode = 0;
   bool last_state = false;
-  size_t i = 0, j = 0, m = 0, n = 0, start = 0, last_index = 0;
+  size_t i = 0, m = 0, n = 0, start = 0, last_index = 0;
   while (i < len) {
     if (isascii(buf[i])) {
       if (std::isalnum(buf[i])) {
@@ -209,39 +209,42 @@ int BasicTokenizer::isCntrl(int c) {
 
 std::string BasicTokenizer::normalize(const uint8_t* str) {
   auto norm = utf8proc_NFD(str);
-  size_t len = std::strlen((char*)norm);
-  char* word = new char[len + 1];
+  size_t len = strlen((char*)norm);
+  std::string result;
+  result.reserve(len);
   int32_t unicode = 0;
   size_t i = 0, n = 0;
-  std::string res;
-  res.reserve(len);
   while (i < len) {
     if (isascii(norm[i])) {
-      res.push_back(norm[i]);
+      result.push_back(norm[i]);
       i++;
     } else {
-      word[n++] = norm[i++];
+      i++;
+      n++;
       while (i < len && (norm[i] & 0xC0) == 0x80) {
-        word[n++] = norm[i++];
+        i++;
+        n++;
       }
-      word[n] = '\0';
-
-      utf8proc_iterate((uint8_t*)word, n, &unicode);
-      if (strcmp(utf8proc_category_string(unicode), "Mn") != 0) {
-        res.append(word, n);
-      }
+      utf8proc_iterate(norm + i - n, n, &unicode);
+      if (strcmp(utf8proc_category_string(unicode), "Mn") != 0)
+        result.append((char*)(norm + i - n), n);
       n = 0;
     }
   }
   free(norm);
-  delete []word;
-  return res;
+  return result;
 }
 
 Tokenizer::Tokenizer(const std::string& vocab_path, bool do_lower_case)
 : BasicTokenizer(do_lower_case) {
   _vocab = std::unique_ptr<trie>(new trie());
   load_vocab(vocab_path);
+  
+  _pad_id = _vocab->index(_pad_token);
+  _cls_id = _vocab->index(_cls_token);
+  _sep_id = _vocab->index(_sep_token);
+  _unk_id = _vocab->index(_unk_token);
+  _mask_id = _vocab->index(_mask_token);
 }
 
 void Tokenizer::load_vocab(const std::string& vocab_path) {
@@ -271,32 +274,32 @@ size_t Tokenizer::size() const {
   return _vocab->size();
 }
 
-int64_t Tokenizer::pad_id() const {
-  return _vocab->index(_pad_token);
+int32_t Tokenizer::pad_id() const {
+  return _pad_id;
 }
 
-int64_t Tokenizer::cls_id() const {
-  return _vocab->index(_cls_token);
+int32_t Tokenizer::cls_id() const {
+  return _cls_id;
 }
 
-int64_t Tokenizer::sep_id() const {
-  return _vocab->index(_sep_token);
+int32_t Tokenizer::sep_id() const {
+  return _sep_id;
 }
 
-int64_t Tokenizer::unk_id() const {
-  return _vocab->index(_unk_token);
+int32_t Tokenizer::unk_id() const {
+  return _unk_id;
 }
 
-int64_t Tokenizer::mask_id() const {
-  return _vocab->index(_mask_token);
+int32_t Tokenizer::mask_id() const {
+  return _mask_id;
 }
 
-int64_t Tokenizer::get_id(const std::string& token) {
+int32_t Tokenizer::get_id(const std::string& token) {
   int id = _vocab->index(token);
-  return id < 0 ? unk_id() : id;
+  return id < 0 ? _unk_id : id;
 }
 
-std::string Tokenizer::get_token(int64_t id) {
+std::string Tokenizer::get_token(int32_t id) {
   return _vocab->keys(id);
 }
 
@@ -304,7 +307,7 @@ bool Tokenizer::count(const std::string& token) const {
   return _vocab->count(token);
 }
 
-std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int64_t>& input_ids) {
+std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int32_t>& input_ids) {
   std::vector<std::string> tokens;
   tokens.reserve(input_ids.size());
   for (size_t i = 0; i < input_ids.size(); i++) {
@@ -313,16 +316,24 @@ std::vector<std::string> Tokenizer::convert_ids_to_tokens(const std::vector<int6
   return tokens;
 }
 
-std::vector<int64_t> Tokenizer::convert_tokens_to_ids(const std::vector<std::string>& tokens, 
-    bool add_cls_sep) {
-  std::vector<int64_t> input_ids;
+std::vector<int32_t> Tokenizer::convert_tokens_to_ids(
+    const std::vector<std::string>& tokens, bool add_cls_sep) {
+  std::vector<int32_t> input_ids;
   input_ids.reserve(tokens.size() + 2);
-  if (add_cls_sep)  input_ids.emplace_back(cls_id());
-  for (size_t i = 0; i < tokens.size(); i++) {
-    input_ids.emplace_back(get_id(tokens[i]));
-  }
-  if (add_cls_sep)  input_ids.emplace_back(sep_id());
+  convert_tokens_to_ids(tokens, input_ids, add_cls_sep);
   return input_ids;
+}
+
+void Tokenizer::convert_tokens_to_ids(const std::vector<std::string>& tokens,
+    std::vector<int32_t>& input_ids,
+    bool add_cls_sep)
+{
+  if (add_cls_sep)
+    input_ids.emplace_back(_cls_id);
+  for (size_t i = 0; i < tokens.size(); i++)
+    input_ids.emplace_back(get_id(tokens[i]));
+  if (add_cls_sep)
+    input_ids.emplace_back(_sep_id);
 }
 
 std::vector<std::string> Tokenizer::wordpiece_tokenize(const std::string& text) {
@@ -389,42 +400,49 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
   }
 }
 
-std::vector<int64_t> Tokenizer::encode(const std::string& text, 
+std::vector<int32_t> Tokenizer::encode(const std::string& text, 
     bool add_cls_sep, 
     bool truncation, 
     size_t max_length) {
-  std::vector<int64_t> input_ids;
+  std::vector<int32_t> input_ids;
   std::vector<Offset> offsets;
   encode(text, input_ids, offsets, add_cls_sep, truncation, max_length);
   return input_ids;
 }
 
 void Tokenizer::encode(const std::string& text,
-    std::vector<int64_t>& input_ids, 
+    std::vector<int32_t>& input_ids, 
     std::vector<Offset>& offsets, 
     bool add_cls_sep, 
     bool truncation, 
     size_t max_length) {
+  if (input_ids.size())
+    input_ids.clear();
+  if (offsets.size())
+    offsets.clear();
+
   std::vector<std::string> tokens;
   wordpiece_tokenize(text, tokens, offsets);
-  input_ids = convert_tokens_to_ids(tokens, add_cls_sep);
+  
+  size_t n = tokens.size();
+  input_ids.reserve(std::max(max_length, n + 2));
+  convert_tokens_to_ids(tokens, input_ids, add_cls_sep);
   
   // truncation
   if (!truncation || input_ids.size() <= max_length)  return;
-  size_t n = input_ids.size();
-  for (size_t i = 0; i < n - max_length; i++) {
-    input_ids.pop_back();
-    offsets.pop_back();
-  }
-  if (add_cls_sep) {
-    input_ids[max_length - 1] = sep_id();
-  }
+  n = max_length + offsets.size() - input_ids.size();
+  input_ids.resize(max_length);
+  offsets.resize(n);
+  if (add_cls_sep)
+    input_ids[max_length - 1] = _sep_id;
+  if (input_ids.capacity() > max_length * 32)
+    std::vector<int32_t>(input_ids).swap(input_ids);
 }
 
 void Tokenizer::encode(const std::vector<std::string>& texts,
-    std::vector<std::vector<int64_t>>& input_ids,
-    std::vector<std::vector<int64_t>>& token_type_ids,
-    std::vector<std::vector<int64_t>>& attention_mask,
+    std::vector<std::vector<int32_t>>& input_ids,
+    std::vector<std::vector<int32_t>>& token_type_ids,
+    std::vector<std::vector<int32_t>>& attention_mask,
     std::vector<std::vector<Offset>>& offsets,
     int num_threads,
     bool add_cls_sep,
@@ -441,53 +459,57 @@ void Tokenizer::encode(const std::vector<std::string>& texts,
   size_t n = texts.size();
   input_ids.resize(n);
   offsets.resize(n);
-  // Multithreading Implementation
-  std::vector<std::thread> threads;
-  threads.reserve(static_cast<size_t>(num_threads));
-  int avg_num = n / num_threads;
-  for (int i = 0; i < num_threads - 1; i++) {
-    threads.emplace_back([&, i]() {
-      for (int j = i * avg_num; j < (i + 1) * avg_num; j++) {
+  if (num_threads <= 1) {
+    for (size_t i = 0; i < n; i++) {
+      encode(texts[i], input_ids[i], offsets[i], add_cls_sep, truncation, max_length);
+    }
+  } else {
+    // Multithreading Implementation
+    std::vector<std::thread> threads;
+    threads.reserve(static_cast<size_t>(num_threads));
+    int avg_num = n / num_threads;
+    for (int i = 0; i < num_threads - 1; i++) {
+      threads.emplace_back([&, i]() {
+        for (int j = i * avg_num; j < (i + 1) * avg_num; j++) {
+          encode(texts[j], input_ids[j], offsets[j], add_cls_sep, truncation, max_length);
+        }
+      });
+    }
+    threads.emplace_back([&]() {
+      for (int j = (num_threads - 1) * avg_num; j < n; j++) {
         encode(texts[j], input_ids[j], offsets[j], add_cls_sep, truncation, max_length);
       }
     });
-  }
-  threads.emplace_back([&]() {
-    for (int j = (num_threads - 1) * avg_num; j < n; j++) {
-      encode(texts[j], input_ids[j], offsets[j], add_cls_sep, truncation, max_length);
-    }
-  });
 
-  for (auto& t : threads) {
-    t.join();
+    for (auto& t : threads) {
+      t.join();
+    }
   }
 
   // token_type_ids and attention_mask
-  token_type_ids.reserve(n);
-  attention_mask.reserve(n);
+  token_type_ids.resize(n);
+  attention_mask.resize(n);
+  size_t seq_len, capacity;
   for (size_t i = 0; i < n; i++) {
-    std::vector<int64_t> token_type_ids_tmp(input_ids[i].size(), 0);
-    std::vector<int64_t> attention_mask_tmp(input_ids[i].size(), 1);
-    token_type_ids.emplace_back(token_type_ids_tmp);
-    attention_mask.emplace_back(attention_mask_tmp);
+    seq_len = input_ids[i].size();
+    capacity = std::max(max_length, seq_len);
+    token_type_ids[i].reserve(capacity);
+    attention_mask[i].reserve(capacity);
+    token_type_ids[i].resize(seq_len, 0);
+    attention_mask[i].resize(seq_len, 1);
   }
   if (!padding) return;
   
   // padding
-  size_t seq_len = 0;
-  size_t pad_len = 0;
   size_t max_seq_len = std::accumulate(input_ids.begin(), input_ids.end(), 0,
-    [](size_t len, const std::vector<int64_t>& input) {
+    [](size_t len, const std::vector<int32_t>& input) {
       return std::max(len, input.size());
     });
+  seq_len = padding_to_max_length ? max_length : max_seq_len;
   for (size_t i = 0; i < n; i++) {
-    seq_len = input_ids[i].size();
-    pad_len = padding_to_max_length ? (max_length - seq_len) : (max_seq_len - seq_len);
-    for (size_t j = 0; j < pad_len; j++) {
-      input_ids[i].emplace_back(pad_id());
-      token_type_ids[i].emplace_back(0);
-      attention_mask[i].emplace_back(0);
-    }
+    input_ids[i].resize(seq_len, _pad_id);
+    token_type_ids[i].resize(seq_len);
+    attention_mask[i].resize(seq_len);
   }
 }
 

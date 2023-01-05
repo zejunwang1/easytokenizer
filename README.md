@@ -1,13 +1,12 @@
-# easytokenizer: 一个简单高效的字词切分工具
+# easytokenizer: 简单高效的文本 Tokenizer 工具
 
-easytokenizer 是一个简单高效的字词切分工具，支持类似 HuggingFace transformers 包中BertTokenizer 的词语切分和标记化功能。具有如下特点：
+easytokenizer 是一个简单高效的文本 Tokenizer 工具，支持类似 HuggingFace transformers 包中 BertTokenizer 的词语切分和标记化功能。具有如下特点：
 
 - 实现高效，基于双数组字典树 (double-array trie) 和 Unicode 规范化工具 utf8proc
-  
-- 多线程，处理速度快
-  
+
+- 支持多线程
+
 - 支持 c++ 和 python
-  
 
 ## C++
 
@@ -48,11 +47,10 @@ attention_mask:
 ### Requirements
 
 - Python version >= 3.6
-  
+
 - pybind11 >= 2.2
-  
+
 - setuptools >= 0.7.0
-  
 
 ### Installation
 
@@ -106,13 +104,12 @@ offsets:
 笔者比较了如下四个 tokenization 工具的处理速度：
 
 - HuggingFace transformers 中基于 python 实现的 BertTokenizer
-  
+
 - HuggingFace transformers 中基于 tokenizers 库实现的 BertTokenizerFast
-  
-- paddlenlp 开源的 faster_tokenizer
-  
+
+- paddlenlp 开源的 faster_tokenizer ( paddlenlp-2.4.0 faster-tokenizer-0.2.0 )
+
 - 本项目中实现的 easytokenizer
-  
 
 在 tests 文件夹中包含测试需要用到的句子文件 sents.txt，sents.txt 为从中文维基百科中抽取的 10098 条句子（平均长度在 128 个字符以上），运行 test_speed.py 进行速度测试：
 
@@ -122,20 +119,29 @@ usage: test_speed.py [-h] --vocab_path VOCAB_PATH --data_path DATA_PATH
 ```
 
 ```shell
-python test_speed.py --vocab_path ../vocab.txt --data_path sents.txt --num_threads 4 --batch_size 64
+python test_speed.py --vocab_path ../vocab.txt --data_path sents.txt --do_lower_case --num_threads 1 --batch_size 1
 ```
 
 分别实验了 batch_size=1, 8, 16, 32, 64, 128，不同工具的处理速度如下表所示：
 
-| batch_size | 1   | 8   | 16  | 32  | 64  | 128 |
-| --- | --- | --- | --- | --- | --- | --- |
-| BertTokenizer | 11.383 | 10.823 | 10.847 | 10.498 | 10.539 | 10.834 |
-| BertTokenizerFast | 4.016 | 1.860 | 1.405 | 1.352 | 1.181 | 1.139 |
-| paddlenlp-FasterTokenizer | 2.861 | 2.342 | 2.258 | 2.216 | 2.344 | 2.194 |
-| easytokenizer (num_threads=1) | 2.701 | 1.890 | 1.754 | 1.563 | 1.871 | 2.089 |
-| easytokenizer (num_threads=4) | 3.405 | 0.803 | 0.790 | 0.768 | 0.751 | 0.802 |
+| batch_size                                | 1      | 8      | 16     | 32     | 64     | 128    |
+|:-----------------------------------------:|:------:|:------:|:------:|:------:|:------:| ------ |
+| BertTokenizer                             | 11.761 | 12.141 | 11.564 | 11.461 | 11.676 | 11.528 |
+| BertTokenizerFast                         | 4.268  | 2.042  | 1.779  | 1.384  | 1.351  | 1.257  |
+| paddlenlp-FasterTokenizer (num_threads=1) | 3.142  | 2.716  | 2.616  | 2.540  | 2.548  | 2.410  |
+| paddlenlp-FasterTokenizer (num_threads=4) | —      | 1.515  | 1.407  | 1.392  | 1.597  | 1.374  |
+| easytokenizer (num_threads=1)             | 0.649  | 0.617  | 0.427  | 0.525  | 0.551  | 0.682  |
+| easytokenizer (num_threads=4)             | —      | 0.578  | 0.769  | 0.672  | 0.468  | 0.546  |
 
-可以看出，当 batch_size=1 时，单线程 (num_threads=1) 下的 easytokenizer 处理速度最快；当 batch_size>=8 时，四线程 (num_threads=4) 下的 easytokenizer 处理速度最快。
+可以看出，单线程 (num_threads=1) 下的 easytokenizer 具有非常优秀的性能，当 batch_size=1 时，其处理速度是 BertTokenizer 的 20 倍左右；当 batch_size 较大时，四线程 (num_threads=4) 下的 easytokenizer 具有微弱的加速效果。
+
+## Links
+
+- https://github.com/huggingface/transformers
+
+- https://github.com/huggingface/tokenizers
+
+- https://github.com/PaddlePaddle/PaddleNLP/tree/develop/fast_tokenizer
 
 ## Contact
 
