@@ -21,7 +21,7 @@ import subprocess
 import platform
 import io
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 EASYTOKENIZER_SRC = "src"
 
 # Based on https://github.com/pybind/python_example
@@ -48,7 +48,7 @@ ext_modules = [
     Extension(
         str("easytokenizer"),
         [
-            str("python/easytokenizer/pybind.cc"),
+            str("pybind/easytokenizer/pybind.cc"),
             str("src/tokenizer.cc"),
             str("src/utf8proc.c")
         ],
@@ -56,11 +56,11 @@ ext_modules = [
             # Path to pybind11 headers
             get_pybind_include(),
             get_pybind_include(user=True),
-            # Path to darmatch source code
+            # Path to easytokenizer source code
             EASYTOKENIZER_SRC,
         ],
         language="c++",
-        extra_compile_args=["-O3"],
+        extra_compile_args=["-O3"]
     ),
 ]
 
@@ -165,6 +165,6 @@ setup(
     packages=[
         str('easytokenizer'),
     ],
-    package_dir={str(''): str('python')},
+    package_dir={str(''): str('pybind')},
     zip_safe=False,
 )

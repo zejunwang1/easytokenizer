@@ -1,20 +1,24 @@
-easytokenizer: 简单高效的文本 Tokenizer 工具
-============================================
+easytokenizer-v0.2.0: 高性能文本 Tokenizer 库
+=============================================
 
-easytokenizer 是一个简单高效的文本 Tokenizer 工具，支持类似 HuggingFace
-transformers 包中 BertTokenizer 的词语切分和标记化功能。具有如下特点：
+easytokenizer 是一个简单易用的高性能文本 Tokenizer 库，支持类似
+HuggingFace transformers 中 BertTokenizer
+的词语切分和标记化功能。具有如下特点：
 
 -  实现高效，基于双数组字典树 (double-array trie) 和 Unicode 规范化工具
    utf8proc
 
--  支持多线程
+-  支持多线程，在处理大批量文本输入时有一定的加速效果
 
 -  支持 c++ 和 python
 
 C++
 ---
 
-使用示例参考 demo.cc，通过 cmake 进行编译：
+Demo
+~~~~
+
+使用示例参考 example/cpp/demo.cc，通过 cmake 进行编译：
 
 .. code:: shell
 
@@ -22,14 +26,38 @@ C++
    cd easytokenizer/
    mkdir build
    cd build/
+   # 默认使用 c++11 thread 线程库
    cmake ..
+   # 使用 OMP 多线程
+   # cmake -DWITH_OMP=ON ..     
    make -j4
 
-执行上述命令后，会在 build 文件夹下生成可执行文件 demo
+执行上述命令后，会在 build/examples/cpp 文件夹下生成可执行文件 demo
 
 .. code:: shell
 
-   ./demo -vocab ../vocab.txt
+   ./examples/cpp/demo -h
+
+显示帮助信息：
+
+::
+
+   ./examples/cpp/demo {OPTIONS}
+
+       easytokenizer-cpp usage demo.
+
+     OPTIONS:
+
+         -h, --help                        Show help information
+         --vocab_path                      Tokenizer vocabulary file.
+         --do_lower_case                   Whether to convert upper case letters to
+                                           lower case.
+         --codepoint_level                 Whether to return character position in
+                                           offsets.
+
+.. code:: shell
+
+   ./examples/cpp/demo --vocab_path ../data/bert-base-chinese-vocab.txt --do_lower_case
 
 运行后部分结果如下：
 
@@ -44,7 +72,72 @@ C++
    101 3926 1290 1920 2110 4638 103 5050 3322 4906 2110 680 2825 3318 683 689 2141 1213 1059 1744 5018 671 511 102 0 0 0 0 0 0 0 0 
    attention_mask:
    1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
-   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0
+   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 
+   offsets:
+   0 3 3 6 6 9 9 12 12 15 15 18 18 21 21 24 24 27 27 30 30 33 33 35 36 43 44 47 48 58 58 61 61 64 64 67 67 70 70 73 73 76 76 79 79 82 82 85 85 88 88 91 91 94 94 97 97 100 100 103 
+   0 3 3 6 6 9 9 12 12 15 15 21 21 24 24 27 27 30 30 33 33 36 36 39 39 42 42 45 45 48 48 51 51 54 54 57 57 60 60 63 63 66 66 69
+
+offsets 表示 input_ids 中除 [CLS] 和 [SEP] 外的其他有效 token
+在原字符串中的字符/字节位置。
+
+-  当设置 add_cls_sep=true，codepoint_level=false 时，input_ids 中第 i
+   个 token 在原字符串中的起始字节位置为 offsets[2 \* (i -
+   1)]，终止字节位置为 offsets[2 \* (i - 1) + 1]；
+
+-  当设置 add_cls_sep=false，codepoint_level=false 时，input_ids 中第 i
+   个 token 在原字符串中的起始字节位置为 offsets[2 \* i]，终止字节位置为
+   offsets[2 \* i + 1]。
+
+Speed
+~~~~~
+
+在 data 文件夹中包含了速度测试需要用到的句子文件 sents.txt 和
+sents_17w.txt。sents.txt 为从中文维基百科中抽取的 10098
+条句子（平均长度在 128 个字符以上），sents_17w.txt
+为从中文维基百科中抽取的 179608 条句子。使用 build/examples/cpp
+文件夹下生成的 speed_tests 测试 c++ 下的处理速度：
+
+::
+
+   ./examples/cpp/speed_tests {OPTIONS}
+
+       easytokenizer-cpp speed testing.
+
+     OPTIONS:
+
+         -h, --help                        Show help information
+         --vocab_path                      Tokenizer vocabulary file.
+         --do_lower_case                   Whether to convert upper case letters to
+                                           lower case.
+         --codepoint_level                 Whether to return character position in
+                                           offsets.
+         --sent_path                       Sentence data path to be processed.
+         --num_threads                     Number of parallel threads.
+         --batch_size                      Batch size.
+
+.. code:: shell
+
+   ./examples/cpp/speed_tests --vocab_path ../data/bert-base-chinese-vocab.txt --sent_path ../data/sents.txt --do_lower_case --num_threads 1 --batch_size 1
+
+在 sents.txt (10098 条句子) 上的测试结果如下：
+
++---------------+-------+-------+-------+-------+-------+-------+
+| batch_size    | 1     | 32    | 64    | 128   | 512   | 1024  |
++===============+=======+=======+=======+=======+=======+=======+
+| num_threads=1 | 0.349 | 0.344 | 0.347 | 0.342 | 0.349 | 0.357 |
++---------------+-------+-------+-------+-------+-------+-------+
+| num_threads=4 | —     | 0.243 | 0.223 | 0.213 | 0.180 | 0.170 |
++---------------+-------+-------+-------+-------+-------+-------+
+
+在 sents_17w.txt (179608 条句子) 上的测试结果如下：
+
++---------------+-------+-------+-------+-------+-------+-------+
+| batch_size    | 1     | 32    | 64    | 128   | 512   | 1024  |
++===============+=======+=======+=======+=======+=======+=======+
+| num_threads=1 | 2.241 | 2.558 | 2.532 | 2.507 | 2.431 | 2.443 |
++---------------+-------+-------+-------+-------+-------+-------+
+| num_threads=4 | —     | 2.691 | 2.610 | 2.338 | 1.791 | 1.472 |
++---------------+-------+-------+-------+-------+-------+-------+
 
 Python
 ------
@@ -69,8 +162,12 @@ Installation
    cd easytokenizer/
    python setup.py install
 
+.. _demo-1:
+
 Demo
 ~~~~
+
+示例位于 example/python/demo.py
 
 .. code:: python
 
@@ -78,22 +175,22 @@ Demo
 
    from easytokenizer import AutoTokenizer
 
-   vocab_path = "vocab.txt"
+   vocab_path = "../../data/bert-base-chinese-vocab.txt"
    tokenizer = AutoTokenizer(vocab_path, do_lower_case = True)
 
    # encode batch texts
    texts = ["计算机科学与技术（Computer Science and Technology）是一门普通高等学校本科专业。",
             "清华大学的[MASK]算机科学与技术专业实力全国第一。"]
-   input_ids, token_type_ids, attention_mask, offsets = tokenizer.encode(
+   result = tokenizer.encode(
        texts, num_threads = 1, add_cls_sep = True, padding = True, padding_to_max_length = False,
        truncation = True, max_length = 512)
    print("encode batch texts:")
    print("input_ids:")
-   print(input_ids)
+   print(result["input_ids"])
    print("attention_mask:")
-   print(attention_mask)
+   print(result["attention_mask"])
    print("offsets:")
-   print(offsets)
+   print(result["offsets"])
 
 运行后结果如下：
 
@@ -105,12 +202,14 @@ Demo
    attention_mask:
    [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]]
    offsets:
-   [[(0, 3), (3, 3), (6, 3), (9, 3), (12, 3), (15, 3), (18, 3), (21, 3), (24, 3), (27, 3), (30, 3), (33, 2), (36, 7), (44, 3), (48, 10), (58, 3), (61, 3), (64, 3), (67, 3), (70, 3), (73, 3), (76, 3), (79, 3), (82, 3), (85, 3), (88, 3), (91, 3), (94, 3), (97, 3), (100, 3)], [(0, 3), (3, 3), (6, 3), (9, 3), (12, 3), (15, 6), (21, 3), (24, 3), (27, 3), (30, 3), (33, 3), (36, 3), (39, 3), (42, 3), (45, 3), (48, 3), (51, 3), (54, 3), (57, 3), (60, 3), (63, 3), (66, 3)]]
+   [[0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 12, 12, 15, 15, 17, 18, 25, 26, 29, 30, 40, 40, 41, 41, 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49, 50, 50, 51, 51, 52, 52, 53, 53, 54, 54, 55], [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27]]
+
+.. _speed-1:
 
 Speed
 ~~~~~
 
-笔者比较了如下四个 tokenization 工具的处理速度：
+笔者比较了如下四个文本 Tokenizer 工具的处理速度：
 
 -  HuggingFace transformers 中基于 python 实现的 BertTokenizer
 
@@ -119,68 +218,82 @@ Speed
 -  paddlenlp 开源的 faster_tokenizer ( paddlenlp-2.4.0
    faster-tokenizer-0.2.0 )
 
--  本项目中实现的 easytokenizer
+-  本项目实现的 easytokenizer
 
-在 tests 文件夹中包含测试需要用到的句子文件 sents.txt，sents.txt
-为从中文维基百科中抽取的 10098 条句子（平均长度在 128 个字符以上），运行
-test_speed.py 进行速度测试：
+运行 python_testing/test_speed.py 进行速度测试：
 
 ::
 
    usage: test_speed.py [-h] --vocab_path VOCAB_PATH --data_path DATA_PATH
                         [--num_threads NUM_THREADS] [--batch_size BATCH_SIZE]
+                        [--do_lower_case]
 
 .. code:: shell
 
-   python test_speed.py --vocab_path ../vocab.txt --data_path sents.txt --do_lower_case --num_threads 1 --batch_size 1
+   python test_speed.py --vocab_path ../data/bert-base-chinese-vocab.txt --data_path ../data/sents.txt --do_lower_case --num_threads 1 --batch_size 1
 
-分别实验了 batch_size=1, 8, 16, 32, 64,
-128，不同工具的处理速度如下表所示：
+分别实验了 batch_size=1, 64, 128, 256, 512, 1024，不同工具在 sents.txt
+(10098 条句子) 上的处理速度如下表所示：
 
-+---------+---------+---------+---------+---------+---------+---------+
-| batch_s | 1       | 8       | 16      | 32      | 64      | 128     |
-| ize     |         |         |         |         |         |         |
-+=========+=========+=========+=========+=========+=========+=========+
-| BertTok | 11.761  | 12.141  | 11.564  | 11.461  | 11.676  | 11.528  |
-| enizer  |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| BertTok | 4.268   | 2.042   | 1.779   | 1.384   | 1.351   | 1.257   |
-| enizerF |         |         |         |         |         |         |
-| ast     |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| paddlen | 3.142   | 2.716   | 2.616   | 2.540   | 2.548   | 2.410   |
-| lp-Fast |         |         |         |         |         |         |
-| erToken |         |         |         |         |         |         |
-| izer    |         |         |         |         |         |         |
-| (num_th |         |         |         |         |         |         |
-| reads=1 |         |         |         |         |         |         |
-| )       |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| paddlen | —       | 1.515   | 1.407   | 1.392   | 1.597   | 1.374   |
-| lp-Fast |         |         |         |         |         |         |
-| erToken |         |         |         |         |         |         |
-| izer    |         |         |         |         |         |         |
-| (num_th |         |         |         |         |         |         |
-| reads=4 |         |         |         |         |         |         |
-| )       |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| easytok | 0.649   | 0.617   | 0.427   | 0.525   | 0.551   | 0.682   |
-| enizer  |         |         |         |         |         |         |
-| (num_th |         |         |         |         |         |         |
-| reads=1 |         |         |         |         |         |         |
-| )       |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| easytok | —       | 0.578   | 0.769   | 0.672   | 0.468   | 0.546   |
-| enizer  |         |         |         |         |         |         |
-| (num_th |         |         |         |         |         |         |
-| reads=4 |         |         |         |         |         |         |
-| )       |         |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| batch_size                       | 1   | 32  | 64  | 128 | 512 | 102 |
+|                                  |     |     |     |     |     | 4   |
++==================================+=====+=====+=====+=====+=====+=====+
+| BertTokenizer                    | 13. | 12. | 12. | 12. | 12. | 12. |
+|                                  | 142 | 124 | 321 | 522 | 454 | 679 |
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| BertTokenizerFast                | 4.7 | 1.3 | 1.1 | 1.3 | 1.2 | 1.2 |
+|                                  | 21  | 65  | 88  | 60  | 31  | 97  |
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| paddlenlp-FasterTokenizer        | 3.4 | 2.6 | 2.6 | 2.6 | 2.8 | 2.9 |
+| (OMP_NUM_THREADS=1)              | 02  | 28  | 37  | 53  | 50  | 47  |
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| paddlenlp-FasterTokenizer        | —   | 1.3 | 1.2 | 1.3 | 1.4 | 1.5 |
+| (OMP_NUM_THREADS=4)              |     | 12  | 71  | 15  | 73  | 53  |
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| easytokenizer (num_threads=1)    | 0.4 | 0.5 | 0.4 | 0.4 | 0.4 | 0.4 |
+|                                  | 66  | 22  | 88  | 52  | 25  | 45  |
++----------------------------------+-----+-----+-----+-----+-----+-----+
+| easytokenizer (num_threads=4)    | —   | 0.4 | 0.3 | 0.2 | 0.2 | 0.2 |
+|                                  |     | 43  | 76  | 20  | 52  | 13  |
++----------------------------------+-----+-----+-----+-----+-----+-----+
 
-可以看出，单线程 (num_threads=1) 下的 easytokenizer
-具有非常优秀的性能，当 batch_size=1 时，其处理速度是 BertTokenizer 的 20
-倍左右；当 batch_size 较大时，四线程 (num_threads=4) 下的 easytokenizer
-具有微弱的加速效果。
+在 sents_17w.txt (179608 条句子) 上的测试结果如下：
+
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| batch_size                     | 1   | 32  | 64  | 128 | 512 | 102 |
+|                                |     |     |     |     |     | 4   |
++================================+=====+=====+=====+=====+=====+=====+
+| BertTokenizer                  | 128 | 115 | 113 | 115 | 116 | 115 |
+|                                | .09 | .98 | .81 | .69 | .67 | .62 |
+|                                | 7   | 8   | 7   | 0   | 2   | 2   |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| BertTokenizerFast              | 49. | 15. | 14. | 14. | 17. | 19. |
+|                                | 610 | 609 | 253 | 587 | 096 | 825 |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| paddlenlp-FasterTokenizer      | 41. | 37. | 36. | 38. | 40. | 39. |
+| (OMP_NUM_THREADS=1)            | 160 | 597 | 285 | 918 | 626 | 269 |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| paddlenlp-FasterTokenizer      | —   | 16. | 15. | 15. | 20. | 22. |
+| (OMP_NUM_THREADS=4)            |     | 383 | 863 | 852 | 339 | 570 |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| easytokenizer (num_threads=1)  | 4.8 | 5.1 | 5.6 | 6.1 | 5.6 | 5.7 |
+|                                | 96  | 56  | 10  | 35  | 05  | 30  |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+| easytokenizer (num_threads=4)  | —   | 5.0 | 5.4 | 6.0 | 3.3 | 3.4 |
+|                                |     | 33  | 19  | 13  | 54  | 58  |
++--------------------------------+-----+-----+-----+-----+-----+-----+
+
+可以看出，easytokenizer 的处理速度显著超过其他工具。当 batch_size=1
+时，单线程 (num_threads=1) 下的 easytokenizer 处理速度是 BertTokenizer
+的 20 倍以上，是 BertTokenizerFast 和 paddlenlp-FasterTokenizer 的 7
+倍以上。
+
+当 batch_size>=32 时，由于 tokenizers
+库优秀的多线程性能，BertTokenizerFast 的处理速度显著提升，4 线程下的
+paddlenlp-FasterTokenizer 与 BertTokenizerFast
+性能接近，但它们仍低于单线程下的 easytokenizer。当使用 easytokenizer
+的多线程并行处理时，建议文本批处理大小在 128 以上。
 
 Links
 -----
