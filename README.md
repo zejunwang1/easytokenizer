@@ -200,7 +200,7 @@ usage: test_speed.py [-h] --vocab_path VOCAB_PATH --data_path DATA_PATH
 python test_speed.py --vocab_path ../data/bert-base-chinese-vocab.txt --data_path ../data/sents.txt --do_lower_case --num_threads 1 --batch_size 1
 ```
 
-分别实验了 batch_size=1, 64, 128, 256, 512, 1024，不同工具在 sents.txt (10098 条句子) 上的处理速度如下表所示：
+分别实验了 batch_size=1, 32, 64, 128, 512, 1024，不同工具在 sents.txt (10098 条句子) 上的处理速度如下表所示：
 
 | batch_size                                    | 1      | 32     | 64     | 128    | 512    | 1024   |
 |:---------------------------------------------:|:------:|:------:|:------:|:------:|:------:|:------:|
