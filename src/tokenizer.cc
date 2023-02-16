@@ -703,7 +703,9 @@ void Tokenizer::encode(const std::string& text,
   // truncation
   if (truncation && input_ids.size() > max_length)
   {
-    n = max_length + offsets.size() - input_ids.size();
+    n = 2 * max_length;
+    if (add_cls_sep)
+      n -= 4;
     input_ids.resize(max_length);
     offsets.resize(n);
     if (add_cls_sep)
