@@ -31,7 +31,6 @@ def main(args):
         "bert-base-chinese", use_faster=True, do_lower_case=args.do_lower_case)
     
     num_batches = int((len(sent_list) - 1) / args.batch_size) + 1
-    '''
     hug_input_ids = []
     hug_time_usage = 0
     for i in range(num_batches):
@@ -45,7 +44,7 @@ def main(args):
         t_e = time.time()
         hug_time_usage += (t_e - t_s)
         hug_input_ids.extend(batch_input_ids)
-    '''
+    
     hug_fast_input_ids = []
     hug_fast_time_usage = 0
     for i in range(num_batches):
@@ -100,7 +99,7 @@ def main(args):
     print(count)
     '''
    
-    #print("huggingface tokenizer time usage: {}s".format(hug_time_usage))
+    print("huggingface tokenizer time usage: {}s".format(hug_time_usage))
     print("huggingface fast tokenizer time usage: {}s".format(hug_fast_time_usage))
     print("our tokenizer time usage: {}s".format(our_time_usage))
     print("paddlenlp faster tokenizer time usage: {}s".format(paddle_time_usage))
