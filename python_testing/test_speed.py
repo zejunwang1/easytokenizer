@@ -9,6 +9,7 @@ from easytokenizer import AutoTokenizer as OurTokenizer
 
 from paddlenlp.transformers import AutoTokenizer
 
+
 def main(args):
     sent_list = []
     with open(args.data_path, mode="r", encoding="utf-8") as data_handle:
@@ -103,6 +104,7 @@ def main(args):
     print("huggingface fast tokenizer time usage: {}s".format(hug_fast_time_usage))
     print("our tokenizer time usage: {}s".format(our_time_usage))
     print("paddlenlp faster tokenizer time usage: {}s".format(paddle_time_usage))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

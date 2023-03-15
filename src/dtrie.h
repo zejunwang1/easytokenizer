@@ -83,17 +83,17 @@ class DTrie
     { return get_index(word.data(), word.size()); }
 
     bool count(const char* word, size_t len) const
-    { return get_index(word, len) < 0 ? false : true; }
+    { return get_index(word, len) >= 0; }
 
     bool count(const std::string& word) const
-    { return get_index(word) < 0 ? false : true; }
+    { return get_index(word) >= 0; }
 
     void insert(const char* word, size_t len)
     {
       if (get_index(word, len) < 0)
       {
         _da->update(word, len, _size ++);
-        _key.emplace_back(std::string(word, len));
+        _key.emplace_back(word, len);
       }
     }
 
@@ -108,8 +108,8 @@ class DTrie
 
     void insert(const std::vector<std::string>& words)
     {
-      for (size_t i = 0; i < words.size(); i++)
-        insert(words[i]);
+      for (const auto & word : words)
+        insert(word);
     }
 
     std::vector<std::pair<size_t, std::string>>
