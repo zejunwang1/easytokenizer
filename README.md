@@ -8,6 +8,8 @@ easytokenizer 是一个简单易用的高性能文本 Tokenizer 库，支持类�
 
 - 支持 c++ 和 python
 
+sunhailin-Leo 提供了一个 Golang binding: https://github.com/sunhailin-Leo/easytokenizer-to-go
+
 ## C++
 
 ### Demo
