@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
   if (!ifs.is_open())
     throw std::invalid_argument(sent_path + " can not be opened for loading!");
   while (std::getline(ifs, sentence))
-    if (sentence.size())
+    if (!sentence.empty())
       sent_list.emplace_back(sentence);
   
   SizeT start = 0, end = 0, n = sent_list.size();

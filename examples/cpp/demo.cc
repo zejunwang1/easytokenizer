@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
     add_cls_sep, truncation, max_length);
 
   std::cout << "encode result:" << std::endl;
-  for (size_t i = 0; i < input_ids.size(); i++)
-    std::cout << input_ids[i] << " ";
+  for (unsigned int input_id : input_ids)
+    std::cout << input_id << " ";
   std::cout << std::endl << std::endl;
   
   
@@ -101,8 +101,8 @@ int main(int argc, char* argv[]) {
   texts.emplace_back("计算机科学与技术（Computer Science and Technology）是一门普通高等学校本科专业。");
   texts.emplace_back("清华大学的[MASK]算机科学与技术专业实力全国第一。");
   std::cout << "encode batch texts:" << std::endl;
-  for (size_t i = 0; i < texts.size(); i++)
-    std::cout << texts[i] << std::endl;
+  for (const auto & text_ : texts)
+    std::cout << text_ << std::endl;
   
   int num_threads = 1;
   bool padding = true;
@@ -117,26 +117,26 @@ int main(int argc, char* argv[]) {
   
   std::cout << "encode result:" << std::endl;
   std::cout << "input_ids:" << std::endl;
-  for (size_t i = 0; i < batch_input_ids.size(); i++) 
+  for (auto & batch_input_id : batch_input_ids)
   {
-    for (size_t j = 0; j < batch_input_ids[i].size(); j++)
-      std::cout << batch_input_ids[i][j] << " ";
+    for (unsigned int j : batch_input_id)
+      std::cout << j << " ";
     std::cout << std::endl;
   }
   
   std::cout << "attention_mask:" << std::endl;
-  for (size_t i = 0; i < batch_attention_mask.size(); i++)
+  for (auto & i : batch_attention_mask)
   {
-    for (size_t j = 0; j < batch_attention_mask[i].size(); j++)
-      std::cout << batch_attention_mask[i][j] << " ";
+    for (unsigned int j : i)
+      std::cout << j << " ";
     std::cout << std::endl;
   }
   
   std::cout << "offsets:" << std::endl;
-  for (size_t i = 0; i < batch_offsets.size(); i++)
+  for (auto & batch_offset : batch_offsets)
   {
-    for (size_t j = 0; j < batch_offsets[i].size(); j++)
-      std::cout << batch_offsets[i][j] << " ";
+    for (unsigned int j : batch_offset)
+      std::cout << j << " ";
     std::cout << std::endl;
   }
 

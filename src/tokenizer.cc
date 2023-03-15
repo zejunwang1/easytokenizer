@@ -25,7 +25,7 @@ BasicTokenizer::BasicTokenizer(bool do_lower_case) : _do_lower_case(do_lower_cas
 void BasicTokenizer::basic_tokenize(const std::string& text,
     std::vector<Token>& tokens) const
 {
-  if (tokens.size())
+  if (!tokens.empty())
     tokens.clear();
 
   tokens.reserve(text.size());
@@ -38,16 +38,16 @@ void BasicTokenizer::basic_tokenize(const std::string& text,
 
   SizeT start = 0;
   std::string subtext;
-  for (SizeT i = 0; i < matches.size(); i++)
+  for (auto & match : matches)
   {
-    subtext = text.substr(start, matches[i].first - start);
-    if (subtext.size())
+    subtext = text.substr(start, match.first - start);
+    if (!subtext.empty())
     {
       tokenize(subtext, start, tokens);
       start += subtext.size();
     }
-    tokens.emplace_back(start, start + matches[i].second.size(), matches[i].second);
-    start += matches[i].second.size();
+    tokens.emplace_back(start, start + match.second.size(), match.second);
+    start += match.second.size();
   }
   if (start < text.size())
   {
@@ -73,7 +73,7 @@ void BasicTokenizer::tokenize(const std::string& text, SizeT pos,
   SizeT i = 0, m = 0, n = 0, start = 0, len = text.size();
 
   char* word = new char[len + 1];
-  uint8_t* ch = new uint8_t[8];
+  auto* ch = new uint8_t[8];
   while (i < len)
   {
     if (isascii(data[i])) 
@@ -212,7 +212,7 @@ void BasicTokenizer::tokenize(const std::string& text, SizeT pos,
   delete []word;
 }
 
-std::string BasicTokenizer::normalize(const uint8_t* str) const
+std::string BasicTokenizer::normalize(const uint8_t* str)
 {
   auto norm = utf8proc_NFD(str);
   SizeT len = strlen((char*)norm);
@@ -246,7 +246,7 @@ std::string BasicTokenizer::normalize(const uint8_t* str) const
   return result;
 }
 
-int BasicTokenizer::isCntrl(int c) const
+int BasicTokenizer::isCntrl(int c)
 {
   if (c == '\t' || c == '\r' || c == '\n')
     return 0;
@@ -278,7 +278,7 @@ void Tokenizer::load_vocab(const std::string& vocab_path)
   ifs.close();
 }
 
-bool Tokenizer::isAlnum(const char* str, SizeT len) const
+bool Tokenizer::isAlnum(const char* str, SizeT len)
 {
   for (SizeT i = 0; i < len; i++)
     if (!isalnum(str[i]))
@@ -290,7 +290,7 @@ void Tokenizer::build_pos_map(const char* str, SizeT len,
     std::vector<SizeT>& pos_map) const
 {
   int32_t unicode = 0;
-  uint8_t* ch = new uint8_t[8];
+  auto* ch = new uint8_t[8];
   SizeT cur = 0, val = 0, m = 0, n = 0;
   while (cur < len)
   {
@@ -342,7 +342,7 @@ void Tokenizer::build_pos_map(const char* str, SizeT len,
   delete []ch;
 }
 
-SizeT Tokenizer::NFD_codepoint_number(const uint8_t* str) const
+SizeT Tokenizer::NFD_codepoint_number(const uint8_t* str)
 {
   auto norm = utf8proc_NFD(str);
   SizeT len = strlen((char*)norm);
@@ -374,7 +374,7 @@ SizeT Tokenizer::NFD_codepoint_number(const uint8_t* str) const
   return c;
 }
 
-WidthT Tokenizer::get_num_bytes_of_utf8_char(const char* str, SizeT len) const
+WidthT Tokenizer::get_num_bytes_of_utf8_char(const char* str, SizeT len)
 {
   SizeT cur = 1;
   WidthT num_bytes = 1;
@@ -383,7 +383,7 @@ WidthT Tokenizer::get_num_bytes_of_utf8_char(const char* str, SizeT len) const
   return num_bytes;
 }
 
-SizeT Tokenizer::get_codepoint_number(const char* str, SizeT len) const
+SizeT Tokenizer::get_codepoint_number(const char* str, SizeT len)
 {
   SizeT cur_bytes = 0, cur_index = 0;
   while (cur_bytes < len) 
@@ -394,11 +394,11 @@ SizeT Tokenizer::get_codepoint_number(const char* str, SizeT len) const
   return cur_index;
 }
 
-SizeT Tokenizer::get_codepoint_number(const std::string& token) const
+SizeT Tokenizer::get_codepoint_number(const std::string& token)
 { return get_codepoint_number(token.data(), token.size()); }
 
 void Tokenizer::build_index_map(const std::string& text, 
-    std::vector<SizeT>& byte2index) const
+    std::vector<SizeT>& byte2index)
 {
   auto data = text.c_str();
   SizeT cur_bytes = 0, cur_index = 0, len = text.size();
@@ -411,7 +411,7 @@ void Tokenizer::build_index_map(const std::string& text,
   byte2index[cur_bytes] = cur_index;
 }
 
-SizeT Tokenizer::search(const char* str, SizeT len, SizeT index) const
+SizeT Tokenizer::search(const char* str, SizeT len, SizeT index)
 {
   SizeT cur_bytes = 0, cur_index = 0;
   while (cur_bytes < len)
@@ -488,8 +488,8 @@ Tokenizer::convert_ids_to_tokens(const std::vector<SizeT>& input_ids) const
 {
   std::vector<std::string> tokens;
   tokens.reserve(input_ids.size());
-  for (SizeT i = 0; i < input_ids.size(); i++)
-    tokens.emplace_back(get_token(input_ids[i]));
+  for (unsigned int input_id : input_ids)
+    tokens.emplace_back(get_token(input_id));
   return tokens;
 }
 
@@ -508,8 +508,8 @@ void Tokenizer::convert_tokens_to_ids(const std::vector<std::string>& tokens,
 {
   if (add_cls_sep)
     input_ids.emplace_back(_cls_id);
-  for (SizeT i = 0; i < tokens.size(); i++)
-    input_ids.emplace_back(get_id(tokens[i]));
+  for (const auto & token : tokens)
+    input_ids.emplace_back(get_id(token));
   if (add_cls_sep)
     input_ids.emplace_back(_sep_id);
 }
@@ -518,9 +518,9 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
     std::vector<std::string>& tokens,
     std::vector<SizeT>& offsets) const
 {
-  if (tokens.size())
+  if (!tokens.empty())
     tokens.clear();
-  if (offsets.size())
+  if (!offsets.empty())
     offsets.clear();
   tokens.reserve(text.size());
   offsets.reserve(2 * text.size());
@@ -540,11 +540,11 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
   std::vector<Token> sub_tokens;
   pos_map.reserve(_max_input_chars_per_word);
   sub_tokens.reserve(_max_input_chars_per_word);
-  for (SizeT i = 0; i < base_tokens.size(); i++) 
+  for (auto & base_token : base_tokens)
   {
-    start = std::get<0>(base_tokens[i]);
-    end   = std::get<1>(base_tokens[i]);
-    token = std::get<2>(base_tokens[i]);
+    start = std::get<0>(base_token);
+    end   = std::get<1>(base_token);
+    token = std::get<2>(base_token);
     
     if (_special->count(token) || _vocab->count(token)) 
     {
@@ -586,7 +586,7 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
     while (cur < token.size()) 
     {
       subtoken = token.substr(cur);
-      if (cur > 0)  
+      if (cur > 0)
         subtoken = "##" + subtoken;
 
       prefix = _vocab->max_prefix(subtoken, _max_prefix_matches);
@@ -623,18 +623,18 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
 
     if (isAlnum(data + start, end - start))
     {
-      for (SizeT j = 0; j < sub_tokens.size(); j++)
+      for (auto & sub_token : sub_tokens)
       {
-        tokens.emplace_back(std::get<2>(sub_tokens[j]));
+        tokens.emplace_back(std::get<2>(sub_token));
         if (_codepoint_level)
         {
-          offsets.emplace_back(byte2index[start] + std::get<0>(sub_tokens[j]));
-          offsets.emplace_back(byte2index[start] + std::get<1>(sub_tokens[j]));
+          offsets.emplace_back(byte2index[start] + std::get<0>(sub_token));
+          offsets.emplace_back(byte2index[start] + std::get<1>(sub_token));
         }
         else
         {
-          offsets.emplace_back(start + std::get<0>(sub_tokens[j]));
-          offsets.emplace_back(start + std::get<1>(sub_tokens[j]));
+          offsets.emplace_back(start + std::get<0>(sub_token));
+          offsets.emplace_back(start + std::get<1>(sub_token));
         }
       }
       continue;
@@ -642,14 +642,14 @@ void Tokenizer::wordpiece_tokenize(const std::string& text,
 
     pos_map.clear();
     build_pos_map(data + start, end - start, pos_map);
-    for (SizeT j = 0; j < sub_tokens.size(); j++)
+    for (auto & sub_token : sub_tokens)
     {
-      auto a = std::get<0>(sub_tokens[j]);
-      auto b = std::get<1>(sub_tokens[j]);
+      auto a = std::get<0>(sub_token);
+      auto b = std::get<1>(sub_token);
       b = (pos_map[a] == pos_map[b]) ? (pos_map[a] + 1) : pos_map[b];
       a = pos_map[a];
 
-      tokens.emplace_back(std::get<2>(sub_tokens[j]));
+      tokens.emplace_back(std::get<2>(sub_token));
       if (_codepoint_level)
       {
         offsets.emplace_back(byte2index[start] + a);
@@ -682,13 +682,13 @@ void Tokenizer::encode(const std::string& text,
     bool truncation,
     SizeT max_length) const
 {
-  if (input_ids.size())
+  if (!input_ids.empty())
     input_ids.clear();
-  if (token_type_ids.size())
+  if (!token_type_ids.empty())
     token_type_ids.clear();
-  if (attention_mask.size())
+  if (!attention_mask.empty())
     attention_mask.clear();
-  if (offsets.size())
+  if (!offsets.empty())
     offsets.clear();
 
   std::vector<std::string> tokens;
@@ -711,7 +711,8 @@ void Tokenizer::encode(const std::string& text,
     if (add_cls_sep)
       input_ids[max_length - 1] = _sep_id;
     if (input_ids.capacity() > max_length * 32)
-      std::vector<SizeT>(input_ids).swap(input_ids);
+      // std::vector<SizeT>(input_ids).swap(input_ids);
+      input_ids.shrink_to_fit();
   }  
   
   // token_type_ids and attention_mask
@@ -741,7 +742,8 @@ std::vector<SizeT> Tokenizer::encode(const std::string& text,
     if (add_cls_sep)
       input_ids[max_length - 1] = _sep_id;
     if (input_ids.capacity() > max_length * 32)
-      std::vector<SizeT>(input_ids).swap(input_ids);
+      // std::vector<SizeT>(input_ids).swap(input_ids);
+      input_ids.shrink_to_fit();
   }
   return input_ids;
 }
@@ -758,13 +760,13 @@ void Tokenizer::encode(const std::vector<std::string>& texts,
     bool truncation,
     SizeT max_length) const
 {
-  if (input_ids.size())
+  if (!input_ids.empty())
     input_ids.clear();
-  if (token_type_ids.size())
+  if (!token_type_ids.empty())
     token_type_ids.clear();
-  if (attention_mask.size())
+  if (!attention_mask.empty())
     attention_mask.clear();
-  if (offsets.size())
+  if (!offsets.empty())
     offsets.clear();
 
   // input_ids
@@ -795,13 +797,13 @@ void Tokenizer::encode(const std::vector<std::string>& texts,
         encode(texts[i], input_ids[i], token_type_ids[i], attention_mask[i], offsets[i], 
           add_cls_sep, truncation, max_length);
     };
-    SizeT start = 0, end = 0, step = ceil(n / float(num_threads));
+    SizeT start = 0, end = 0, step = ceil(float(n) / float(num_threads));
     for (int i = 0; i < num_threads; i++)
     {
       end = start + step;
       if (end > n)
         end = n;
-      threads.emplace_back(std::thread(func, start, end));
+      threads.emplace_back(func, start, end);
       start = end;
     }
 

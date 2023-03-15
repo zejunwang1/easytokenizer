@@ -47,8 +47,8 @@ class BasicTokenizer
     const SizeT _max_prefix_matches = 64;
 
     std::unique_ptr<Trie> _special;
-    std::string normalize(const uint8_t* str) const;
-    int isCntrl(int c) const;
+    static std::string normalize(const uint8_t* str) ;
+    static int isCntrl(int c) ;
 };
 
 class Tokenizer : public BasicTokenizer
@@ -127,18 +127,18 @@ class Tokenizer : public BasicTokenizer
     static const SizeT _max_input_chars_per_word = 100;
 
     void load_vocab(const std::string& vocab_path);
-    bool isAlnum(const char* str, SizeT len) const;
+    static bool isAlnum(const char* str, SizeT len) ;
     void build_pos_map(const char* str, SizeT len, 
         std::vector<SizeT>& pos_map) const;
-    void build_index_map(const std::string& text, 
-        std::vector<SizeT>& byte2index) const;
+    static void build_index_map(const std::string& text,
+        std::vector<SizeT>& byte2index) ;
 
-    SizeT NFD_codepoint_number(const uint8_t* str) const;    
-    SizeT get_codepoint_number(const std::string& token) const;
-    SizeT get_codepoint_number(const char* str, SizeT len) const;
-    WidthT get_num_bytes_of_utf8_char(const char* str, SizeT len) const;
+    static SizeT NFD_codepoint_number(const uint8_t* str) ;
+    static SizeT get_codepoint_number(const std::string& token) ;
+    static SizeT get_codepoint_number(const char* str, SizeT len) ;
+    static WidthT get_num_bytes_of_utf8_char(const char* str, SizeT len) ;
 
-    SizeT search(const char* str, SizeT len, SizeT index) const;
+    static SizeT search(const char* str, SizeT len, SizeT index) ;
 };
 
 }

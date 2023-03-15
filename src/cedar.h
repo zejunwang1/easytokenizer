@@ -173,7 +173,7 @@ namespace cedar {
 #ifndef USE_FAST_LOAD
       if (! _ninfo || ! _block) restore ();
 #endif
-      for (const uchar* const key_ = reinterpret_cast <const uchar*> (key);
+      for (const auto* const key_ = reinterpret_cast <const uchar*> (key);
            pos < len; ++pos) {
 #ifdef USE_REDUCED_TRIE
         const value_type val_ = _array[from].value;
@@ -217,7 +217,7 @@ namespace cedar {
         from = static_cast <size_t> (_array[from].check);
       } while (! flag);
     }
-    int build (size_t num, const char** key, const size_t* len = 0, const value_type* val = 0) {
+    int build (size_t num, const char** key, const size_t* len = nullptr, const value_type* val = 0) {
       for (size_t i = 0; i < num; ++i)
         update (key[i], len ? len[i] : std::strlen (key[i]), val ? val[i] : value_type (i));
       return 0;
@@ -419,12 +419,12 @@ namespace cedar {
     }
     // find key from double array
     int _find (const char* key, size_t& from, size_t& pos, const size_t len) const {
-      for (const uchar* const key_ = reinterpret_cast <const uchar*> (key);
+      for (const auto* const key_ = reinterpret_cast <const uchar*> (key);
            pos < len; ) { // follow link
 #ifdef USE_REDUCED_TRIE
         if (_array[from].value >= 0) break;
 #endif
-        size_t to = static_cast <size_t> (_array[from].base ()); to ^= key_[pos];
+        auto to = static_cast <size_t> (_array[from].base ()); to ^= key_[pos];
         if (_array[to].check != static_cast <int> (from)) return CEDAR_NO_PATH;
         ++pos;
         from = to;
@@ -444,7 +444,7 @@ namespace cedar {
         const int from = _array[to].check;
         if (from < 0) continue; // skip empty node
         const int base = _array[from].base ();
-        if (const uchar label = static_cast <uchar> (base ^ to)) // skip leaf
+        if (const auto label = static_cast <uchar> (base ^ to)) // skip leaf
           _push_sibling (static_cast <size_t> (from), base, label,
                          ! from || _ninfo[from].child || _array[base ^ 0].check == from);
       }
@@ -597,8 +597,8 @@ namespace cedar {
     int _find_place (const uchar* const first, const uchar* const last) {
       if (int bi = _bheadO) {
         const int   bz = _block[_bheadO].prev;
-        const short nc = static_cast <short> (last - first + 1);
-        while (1) { // set candidate block
+        const auto nc = static_cast <short> (last - first + 1);
+        while (true) { // set candidate block
           block& b = _block[bi];
           if (b.num >= nc && nc < b.reject) // explore configuration
             for (int e = b.ehead;;) {
@@ -613,7 +613,7 @@ namespace cedar {
           if (++b.trial == MAX_TRIAL) _transfer_block (bi, _bheadO, _bheadC);
           if (bi == bz) break;
           bi = bi_;
-        };
+        }
       }
       return _add_block () << 8;
     }
