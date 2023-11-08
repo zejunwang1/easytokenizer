@@ -131,7 +131,13 @@ offsets 表示 input_ids 中除 [CLS] 和 [SEP] 外的其他有效 token 在原�
 
 ### Installation
 
-从 github 仓库中获取最新版本安装：
+从 github 仓库安装最新版本：
+
+```
+pip install git+https://github.com/zejunwang1/easytokenizer
+```
+
+或者：
 
 ```shell
 git clone https://github.com/zejunwang1/easytokenizer
