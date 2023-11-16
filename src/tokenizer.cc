@@ -242,7 +242,10 @@ std::string BasicTokenizer::normalize(const uint8_t* str) const
       n = 0;
     }
   }
-  free(norm);
+  if (norm) {
+    free(norm);
+    norm = NULL;
+  }
   return result;
 }
 
@@ -370,7 +373,10 @@ SizeT Tokenizer::NFD_codepoint_number(const uint8_t* str) const
       n = 0;
     }
   }
-  free(norm);
+  if (norm) {
+    free(norm);
+    norm = NULL;
+  }
   return c;
 }
 

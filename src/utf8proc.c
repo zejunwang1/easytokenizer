@@ -740,11 +740,13 @@ UTF8PROC_DLLEXPORT utf8proc_ssize_t utf8proc_map_custom(
   result = utf8proc_decompose_custom(str, strlen, buffer, result, options, custom_func, custom_data);
   if (result < 0) {
     free(buffer);
+    buffer = NULL;
     return result;
   }
   result = utf8proc_reencode(buffer, result, options);
   if (result < 0) {
     free(buffer);
+    buffer = NULL;
     return result;
   }
   {
