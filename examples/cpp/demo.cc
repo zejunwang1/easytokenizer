@@ -5,8 +5,6 @@
 #include "args.h"
 #include "tokenizer.h"
 
-using tokenizer::SizeT;
-
 int main(int argc, char* argv[]) {
   args::ArgumentParser parser("easytokenizer-cpp usage demo.");
   args::HelpFlag help(parser, "help", "Show help information", {'h', "help"});
@@ -67,7 +65,7 @@ int main(int argc, char* argv[]) {
   
   // auto& tokens = AutoTokenizer.wordpiece_tokenize(text);
   std::vector<std::string> tokens;
-  std::vector<SizeT> offsets;
+  std::vector<int> offsets;
   AutoTokenizer.wordpiece_tokenize(text, tokens, offsets);
 
   std::cout << "tokenize result:" << std::endl;
@@ -79,14 +77,12 @@ int main(int argc, char* argv[]) {
   
   bool add_cls_sep = true;
   bool truncation = true;
-  SizeT max_length = 512;
+  int max_length = 512;
   
   // auto& input_ids = AutoTokenizer.encode(text, add_cls_sep, truncation, max_length);
-  std::vector<SizeT> input_ids;
-  std::vector<SizeT> token_type_ids;
-  std::vector<SizeT> attention_mask;
-  AutoTokenizer.encode(text, input_ids, token_type_ids, attention_mask, offsets, 
-    add_cls_sep, truncation, max_length);
+  std::vector<int> input_ids;
+  std::vector<int> attention_mask;
+  AutoTokenizer.encode(text, input_ids, attention_mask, offsets, add_cls_sep, truncation, max_length);
 
   std::cout << "encode result:" << std::endl;
   for (size_t i = 0; i < input_ids.size(); i++)
@@ -108,12 +104,11 @@ int main(int argc, char* argv[]) {
   bool padding = true;
   bool padding_to_max_length = false;
 
-  std::vector<std::vector<SizeT>> batch_input_ids;
-  std::vector<std::vector<SizeT>> batch_token_type_ids;
-  std::vector<std::vector<SizeT>> batch_attention_mask;
-  std::vector<std::vector<SizeT>> batch_offsets;
-  AutoTokenizer.encode(texts, batch_input_ids, batch_token_type_ids, batch_attention_mask,
-      batch_offsets, num_threads, add_cls_sep, padding, padding_to_max_length, truncation, max_length);
+  std::vector<std::vector<int>> batch_input_ids;
+  std::vector<std::vector<int>> batch_attention_mask;
+  std::vector<std::vector<int>> batch_offsets;
+  AutoTokenizer.encode(texts, batch_input_ids, batch_attention_mask, batch_offsets, num_threads, 
+    add_cls_sep, padding, padding_to_max_length, truncation, max_length);
   
   std::cout << "encode result:" << std::endl;
   std::cout << "input_ids:" << std::endl;

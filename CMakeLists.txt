@@ -10,7 +10,7 @@ cmake_policy(SET CMP0079 NEW)
 project(easytokenizer LANGUAGES CXX C VERSION 0.2.0)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -O3 -march=native -funroll-loops")
 
 option(WITH_OMP     "Compile with OpenMP"  OFF)
 if (WITH_OMP)

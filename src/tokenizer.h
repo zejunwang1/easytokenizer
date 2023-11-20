@@ -20,12 +20,9 @@
 namespace tokenizer
 {
 
-using SizeT   = uint32_t;
 using WidthT  = uint_fast8_t;
 using Trie    = cedar::DTrie;
-using Token   = std::tuple<SizeT, SizeT, std::string>;
-
-static const SizeT _npos = SizeT(-1);
+using Token   = std::tuple<int, int, std::string>;
 
 class BasicTokenizer
 {
@@ -34,7 +31,7 @@ class BasicTokenizer
 
     std::vector<Token> basic_tokenize(const std::string& text) const;
     void basic_tokenize(const std::string& text, std::vector<Token>& tokens) const;
-    void tokenize(const std::string& text, SizeT pos, std::vector<Token>& tokens) const;
+    void tokenize(const std::string& text, int pos, std::vector<Token>& tokens) const;
 
   protected:
     const std::string _pad_token = "[PAD]";
@@ -44,7 +41,7 @@ class BasicTokenizer
     const std::string _mask_token = "[MASK]";
 
     bool _do_lower_case;
-    const SizeT _max_prefix_matches = 64;
+    const int _max_prefix_matches = 64;
 
     std::unique_ptr<Trie> _special;
     std::string normalize(const uint8_t* str) const;
@@ -69,76 +66,74 @@ class Tokenizer : public BasicTokenizer
     std::string sep_token() const;
     std::string unk_token() const;
     std::string mask_token() const;
-    std::string get_token(SizeT id) const;
+    std::string get_token(int id) const;
 
-    SizeT size() const;
-    SizeT pad_id() const;
-    SizeT cls_id() const;
-    SizeT sep_id() const;
-    SizeT unk_id() const;
-    SizeT mask_id() const;
-    SizeT get_id(const std::string& token) const;
+    int size() const;
+    int pad_id() const;
+    int cls_id() const;
+    int sep_id() const;
+    int unk_id() const;
+    int mask_id() const;
+    int get_id(const std::string& token) const;
 
     bool count(const std::string& token) const;
-    std::vector<std::string> convert_ids_to_tokens(const std::vector<SizeT>& input_ids) const;
-    std::vector<SizeT> convert_tokens_to_ids(const std::vector<std::string>& tokens,
+    std::vector<std::string> convert_ids_to_tokens(const std::vector<int>& input_ids) const;
+    std::vector<int> convert_tokens_to_ids(const std::vector<std::string>& tokens,
         bool add_cls_sep = false) const;
     void convert_tokens_to_ids(const std::vector<std::string>& tokens,
-        std::vector<SizeT>& input_ids,
+        std::vector<int>& input_ids,
         bool add_cls_sep = false) const;
 
     // wordpiece tokenize
     std::vector<std::string> wordpiece_tokenize(const std::string& text) const;
     void wordpiece_tokenize(const std::string& text,
         std::vector<std::string>& tokens,
-        std::vector<SizeT>& offsets) const;
+        std::vector<int>& offsets) const;
 
     // encode single sentence
-    std::vector<SizeT> encode(const std::string& text,
+    std::vector<int> encode(const std::string& text,
         bool add_cls_sep = true,
         bool truncation = true,
-        SizeT max_length = 512) const;
+        int max_length = 512) const;
     void encode(const std::string& text,
-        std::vector<SizeT>& input_ids,
-        std::vector<SizeT>& token_type_ids,
-        std::vector<SizeT>& attention_mask,
-        std::vector<SizeT>& offsets,
+        std::vector<int>& input_ids,
+        std::vector<int>& attention_mask,
+        std::vector<int>& offsets,
         bool add_cls_sep = true,
         bool truncation = true,
-        SizeT max_length = 512) const;
+        int max_length = 512) const;
 
     // encode batch sentences
     void encode(const std::vector<std::string>& texts,
-        std::vector<std::vector<SizeT>>& input_ids,
-        std::vector<std::vector<SizeT>>& token_type_ids,
-        std::vector<std::vector<SizeT>>& attention_mask,
-        std::vector<std::vector<SizeT>>& offsets,
+        std::vector<std::vector<int>>& input_ids,
+        std::vector<std::vector<int>>& attention_mask,
+        std::vector<std::vector<int>>& offsets,
         int num_threads = 1,
         bool add_cls_sep = true,
         bool padding = true,
         bool padding_to_max_length = false,
         bool truncation = true,
-        SizeT max_length = 512) const;
+        int max_length = 512) const;
   
   protected:
     std::unique_ptr<Trie> _vocab;
     bool _codepoint_level = true;
-    SizeT _pad_id, _cls_id, _sep_id, _unk_id, _mask_id;
-    static const SizeT _max_input_chars_per_word = 100;
+    int _pad_id, _cls_id, _sep_id, _unk_id, _mask_id;
+    static const int _max_input_chars_per_word = 100;
 
     void load_vocab(const std::string& vocab_path);
-    bool isAlnum(const char* str, SizeT len) const;
-    void build_pos_map(const char* str, SizeT len, 
-        std::vector<SizeT>& pos_map) const;
+    bool isAlnum(const char* str, int len) const;
+    void build_pos_map(const char* str, int len, 
+        std::vector<int>& pos_map) const;
     void build_index_map(const std::string& text, 
-        std::vector<SizeT>& byte2index) const;
+        std::vector<int>& byte2index) const;
 
-    SizeT NFD_codepoint_number(const uint8_t* str) const;    
-    SizeT get_codepoint_number(const std::string& token) const;
-    SizeT get_codepoint_number(const char* str, SizeT len) const;
-    WidthT get_num_bytes_of_utf8_char(const char* str, SizeT len) const;
+    int NFD_codepoint_number(const uint8_t* str) const;    
+    int get_codepoint_number(const std::string& token) const;
+    int get_codepoint_number(const char* str, int len) const;
+    WidthT get_num_bytes_of_utf8_char(const char* str, int len) const;
 
-    SizeT search(const char* str, SizeT len, SizeT index) const;
+    int search(const char* str, int len, int index) const;
 };
 
 }

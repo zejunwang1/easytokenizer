@@ -19,6 +19,60 @@ using Encodings = std::map<std::string, std::vector<std::vector<int>>>;
 PYBIND11_MAKE_OPAQUE(Encoding);
 PYBIND11_MAKE_OPAQUE(Encodings);
 
+std::vector<std::string> tokenize(tokenizer::Tokenizer& m,
+    const std::string& text)
+{ return m.wordpiece_tokenize(text); }
+
+std::vector<SizeT> convert_tokens_to_ids(tokenizer::Tokenizer& m,
+    const std::vector<std::string>& tokens,
+    bool add_cls_sep = false)
+{ return m.convert_tokens_to_ids(tokens, add_cls_sep); }
+
+Encoding single_encode(tokenizer::Tokenizer& m, 
+    const std::string& text,
+    bool add_cls_sep = true, 
+    bool truncation = true, 
+    SizeT max_length = 512) 
+{
+  std::vector<SizeT> input_ids;
+  std::vector<SizeT> token_type_ids;
+  std::vector<SizeT> attention_mask;
+  std::vector<SizeT> offsets; 
+  m.encode(text, input_ids, token_type_ids, attention_mask, offsets, 
+    add_cls_sep, truncation, max_length);
+  
+  Encoding encoding;
+  encoding["input_ids"] = std::move(input_ids);
+  encoding["token_type_ids"] = std::move(token_type_ids);
+  encoding["attention_mask"] = std::move(attention_mask);
+  encoding["offsets"] = std::move(offsets);
+  return encoding; 
+}
+
+Encodings batch_encode(tokenizer::Tokenizer& m,
+    const std::vector<std::string>& texts,
+    int num_threads = 1,
+    bool add_cls_sep = true, 
+    bool padding = true, 
+    bool padding_to_max_length = false,
+    bool truncation = true, 
+    SizeT max_length = 512)
+{
+  std::vector<std::vector<SizeT>> input_ids;
+  std::vector<std::vector<SizeT>> token_type_ids;
+  std::vector<std::vector<SizeT>> attention_mask;
+  std::vector<std::vector<SizeT>> offsets;
+  m.encode(texts, input_ids, token_type_ids, attention_mask, offsets, 
+    num_threads, add_cls_sep, padding, padding_to_max_length, truncation, max_length);
+
+  Encodings encodings;
+  encodings["input_ids"] = std::move(input_ids);
+  encodings["token_type_ids"] = std::move(token_type_ids);
+  encodings["attention_mask"] = std::move(attention_mask);
+  encodings["offsets"] = std::move(offsets);
+  return encodings;
+}
+
 PYBIND11_MODULE(easytokenizer, m) {
   m.doc() = "An efficient and easy-to-use tokenization toolkit.";
   
@@ -61,67 +115,23 @@ PYBIND11_MODULE(easytokenizer, m) {
     
     .def("convert_ids_to_tokens", &tokenizer::Tokenizer::convert_ids_to_tokens, 
          py::arg("input_ids"))
-    .def(
-      "convert_tokens_to_ids",
-      [](tokenizer::Tokenizer& m, const std::vector<std::string>& tokens, bool add_cls_sep = false) {
-        return m.convert_tokens_to_ids(tokens, add_cls_sep);
-      },
-      py::arg("tokens"), py::arg("add_cls_sep") = false
-    )
+    .def("convert_tokens_to_ids", &convert_tokens_to_ids,
+         py::arg("tokens"), py::arg("add_cls_sep") = false)
     
-    .def(
-      "tokenize",
-      [](tokenizer::Tokenizer& m, const std::string& text) {
-        return m.wordpiece_tokenize(text);       
-      },
-      py::arg("text")
-    )
+    .def("tokenize", &tokenize, py::arg("text"))
     
-    .def(
-      "encode",
-      [](tokenizer::Tokenizer& m, const std::string& text, 
-        bool add_cls_sep = true, bool truncation = true, int max_length = 512) {
-        std::vector<int> input_ids;
-        std::vector<int> attention_mask;
-        std::vector<int> offsets;
-        m.encode(text, input_ids, attention_mask, offsets,
-          add_cls_sep, truncation, max_length);
-
-        Encoding encoding;
-        encoding["input_ids"] = std::move(input_ids);
-        encoding["attention_mask"] = std::move(attention_mask);
-        encoding["offsets"] = std::move(offsets);
-        return encoding;       
-      },
-      py::arg("text"),
-      py::arg("add_cls_sep") = true,
-      py::arg("truncation") = true, 
-      py::arg("max_length") = 512
-    )
+    .def("encode", &single_encode, 
+         py::arg("text"),
+         py::arg("add_cls_sep") = true,
+         py::arg("truncation") = true, 
+         py::arg("max_length") = 512)
     
-    .def(
-      "encode",
-      [](tokenizer::Tokenizer& m, const std::vector<std::string>& texts, int num_threads = 1, 
-        bool add_cls_sep = true, bool padding = true, bool padding_to_max_length = false, 
-        bool truncation = true, int max_length = 512) {
-        std::vector<std::vector<int>> input_ids;
-        std::vector<std::vector<int>> attention_mask;
-        std::vector<std::vector<int>> offsets;
-        m.encode(texts, input_ids, attention_mask, offsets, num_threads, add_cls_sep, padding, 
-          padding_to_max_length, truncation, max_length);
-
-        Encodings encodings;
-        encodings["input_ids"] = std::move(input_ids);
-        encodings["attention_mask"] = std::move(attention_mask);
-        encodings["offsets"] = std::move(offsets);
-        return encodings;       
-      },
-      py::arg("texts"),
-      py::arg("num_threads") = 1,
-      py::arg("add_cls_sep") = true, 
-      py::arg("padding") = true,
-      py::arg("padding_to_max_length") = false, 
-      py::arg("truncation") = true,
-      py::arg("max_length") = 512
-    );
+    .def("encode", &batch_encode,
+         py::arg("texts"),
+         py::arg("num_threads") = 1,
+         py::arg("add_cls_sep") = true, 
+         py::arg("padding") = true,
+         py::arg("padding_to_max_length") = false, 
+         py::arg("truncation") = true,
+         py::arg("max_length") = 512);
 }

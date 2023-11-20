@@ -8,8 +8,6 @@
 #include "args.h"
 #include "tokenizer.h"
 
-using tokenizer::SizeT;
-
 int main(int argc, char* argv[])
 {
   args::ArgumentParser parser("easytokenizer-cpp speed testing.");
@@ -24,7 +22,7 @@ int main(int argc, char* argv[])
       parser, "", "Sentence data path to be processed.", {"sent_path"});
   args::ValueFlag<int> numThreads(
       parser, "", "Number of parallel threads.", {"num_threads"});
-  args::ValueFlag<SizeT> batchSize(
+  args::ValueFlag<int> batchSize(
       parser, "", "Batch size.", {"batch_size"});
   
   // parse arguments
@@ -54,7 +52,7 @@ int main(int argc, char* argv[])
   bool do_lower_case = false;
   bool codepoint_level = false;
   int num_threads = 1;
-  SizeT batch_size = 1;
+  int batch_size = 1;
   if (vocabPath)
     vocab_path = args::get(vocabPath);
   if (doLowerCase)
@@ -85,15 +83,13 @@ int main(int argc, char* argv[])
     if (sentence.size())
       sent_list.emplace_back(sentence);
   
-  SizeT start = 0, end = 0, n = sent_list.size();
-  SizeT num_batches = n > 0 ? ((n - 1) / batch_size + 1) : 0;
+  int start = 0, end = 0, n = sent_list.size();
+  int num_batches = n > 0 ? ((n - 1) / batch_size + 1) : 0;
   
-  std::vector<std::vector<SizeT>> input_ids;
-  std::vector<std::vector<SizeT>> token_type_ids;
-  std::vector<std::vector<SizeT>> attention_mask;
-  std::vector<std::vector<SizeT>> offsets;
+  std::vector<std::vector<int>> input_ids;
+  std::vector<std::vector<int>> attention_mask;
+  std::vector<std::vector<int>> offsets;
   input_ids.reserve(n);
-  token_type_ids.reserve(n);
   attention_mask.reserve(n);
   offsets.reserve(n);
   
@@ -101,30 +97,28 @@ int main(int argc, char* argv[])
   bool padding = true;
   bool padding_to_max_length = false;
   bool truncation = true;
-  SizeT max_length = 512;
+  int max_length = 512;
 
   std::vector<std::string> batch_sent_list;
   batch_sent_list.reserve(batch_size);
   std::chrono::steady_clock::time_point time_start = std::chrono::steady_clock::now();
-  for (SizeT i = 0; i < num_batches; i++)
+  for (int i = 0; i < num_batches; i++)
   {
     batch_sent_list.clear();
     start = i * batch_size;
     end = std::min((i + 1) * batch_size, n);
-    for (SizeT j = start; j < end; j++)
+    for (int j = start; j < end; j++)
       batch_sent_list.emplace_back(sent_list[j]);
     
-    std::vector<std::vector<SizeT>> batch_input_ids;
-    std::vector<std::vector<SizeT>> batch_token_type_ids;
-    std::vector<std::vector<SizeT>> batch_attention_mask;
-    std::vector<std::vector<SizeT>> batch_offsets;
-    AutoTokenizer.encode(batch_sent_list, batch_input_ids, batch_token_type_ids, batch_attention_mask,
-        batch_offsets, num_threads, add_cls_sep, padding, padding_to_max_length, truncation, max_length);
+    std::vector<std::vector<int>> batch_input_ids;
+    std::vector<std::vector<int>> batch_attention_mask;
+    std::vector<std::vector<int>> batch_offsets;
+    AutoTokenizer.encode(batch_sent_list, batch_input_ids, batch_attention_mask, batch_offsets, 
+      num_threads, add_cls_sep, padding, padding_to_max_length, truncation, max_length);
     
-    for (SizeT j = 0; j < batch_input_ids.size(); j++)
+    for (int j = 0; j < batch_input_ids.size(); j++)
     {
       input_ids.emplace_back(batch_input_ids[j]);
-      token_type_ids.emplace_back(batch_token_type_ids[j]);
       attention_mask.emplace_back(batch_attention_mask[j]);
       offsets.emplace_back(batch_offsets[j]);
     }

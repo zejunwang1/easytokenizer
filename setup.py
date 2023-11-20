@@ -60,7 +60,7 @@ ext_modules = [
             EASYTOKENIZER_SRC,
         ],
         language="c++",
-        extra_compile_args=["-O3"]
+        extra_compile_args=["-O3", "-march=native", "-funroll-loops"]
     ),
 ]
 
